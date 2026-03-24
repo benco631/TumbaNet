@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #050507;
+  --bg-secondary: #0c0c14;
+  --bg-card: #12121f;
+  --bg-card-hover: #1a1a2e;
+  --border: #1e1e3a;
+  --border-light: #2a2a50;
+  --text-primary: #eeeef6;
+  --text-secondary: #7e7ea0;
+  --accent: #c026d3;
+  --accent-hover: #a21caf;
+  --accent-glow: rgba(192, 38, 211, 0.15);
+  --gradient-start: #e040fb;
+  --gradient-mid: #c026d3;
+  --gradient-end: #a21caf;
+  --success: #22c55e;
+  --error: #ef4444;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Mobile-friendly touch targets */
+@media (max-width: 640px) {
+  button, a, input, select, textarea {
+    min-height: 36px;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Smooth page transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Glass card effect */
+.glass-card {
+  background: rgba(18, 18, 31, 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+}
+
+/* Gradient text utility — neon purple-to-pink */
+.gradient-text {
+  background: linear-gradient(135deg, #e040fb, #c026d3, #a21caf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Secondary gradient text — blue-to-cyan */
+.gradient-text-blue {
+  background: linear-gradient(135deg, #c026d3, #e040fb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Accent glow for highlighted cards */
+.glow-accent {
+  box-shadow: 0 0 20px rgba(192, 38, 211, 0.08), 0 0 60px rgba(192, 38, 211, 0.04);
+}
+
+/* Stronger glow for premium elements */
+.glow-strong {
+  box-shadow: 0 0 30px rgba(192, 38, 211, 0.15), 0 0 80px rgba(162, 28, 175, 0.08);
+}
+
+/* Primary gradient background utility */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #e040fb, #a21caf);
+}
+
+/* Accent gradient border effect */
+.border-gradient {
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+}
+.border-gradient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(224, 64, 251, 0.3), rgba(162, 28, 175, 0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Better form inputs */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Responsive container */
+.container-app {
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .container-app {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+/* Bar chart animation */
+@keyframes growBar {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.animate-grow-bar {
+  animation: growBar 0.6s ease-out forwards;
+  transform-origin: left;
+}
+
+/* Safe area inset for notched phones */
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Subtle background mesh */
+.bg-mesh {
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(192, 38, 211, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(162, 28, 175, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(224, 64, 251, 0.03) 0%, transparent 50%);
+}

@@ -1,0 +1,277 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id         String   @id @default(cuid())
+  name       String
+  email      String   @unique
+  password   String
+  avatar     String?
+  bio        String?
+  nickname   String?
+  tag        String?
+  tumbaCoins Int      @default(100)
+  status     String   @default("")
+  isAdmin    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  entries              Entry[]
+  dictionaryEntries    DictionaryEntry[]
+  dictionaryComments   DictionaryComment[]
+  dictionaryRatings    DictionaryRating[]
+  events               Event[]
+  eventPollVotes       EventPollVote[]
+  eventRsvps           EventRsvp[]
+  betsCreated          Bet[]
+  wagers               Wager[]
+  media                Media[]
+  albums               Album[]
+  purchases            Purchase[]
+  activityLogs         ActivityLog[]
+  notificationsReceived Notification[] @relation("notificationsReceived")
+  notificationsSent     Notification[] @relation("notificationsSent")
+}
+
+model Entry {
+  id        String   @id @default(cuid())
+  content   String
+  title     String   @default("")
+  imageUrl  String?
+  tags      String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  month     Int
+  year      Int
+  createdAt DateTime @default(now())
+
+  @@index([month, year])
+}
+
+model MonthlySummary {
+  id        String   @id @default(cuid())
+  month     Int
+  year      Int
+  summary   String
+  committed Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([month, year])
+}
+
+model DictionaryEntry {
+  id         String   @id @default(cuid())
+  term       String
+  definition String
+  example    String?
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  comments DictionaryComment[]
+  ratings  DictionaryRating[]
+
+  @@index([term])
+}
+
+model DictionaryComment {
+  id               String          @id @default(cuid())
+  content          String
+  userId           String
+  user             User            @relation(fields: [userId], references: [id])
+  dictionaryEntryId String
+  dictionaryEntry  DictionaryEntry @relation(fields: [dictionaryEntryId], references: [id], onDelete: Cascade)
+  createdAt        DateTime        @default(now())
+}
+
+model DictionaryRating {
+  id               String          @id @default(cuid())
+  value            Int
+  userId           String
+  user             User            @relation(fields: [userId], references: [id])
+  dictionaryEntryId String
+  dictionaryEntry  DictionaryEntry @relation(fields: [dictionaryEntryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dictionaryEntryId])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  date        DateTime
+  location    String?
+  category    String   @default("other")
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+
+  polls EventPoll[]
+  rsvps EventRsvp[]
+}
+
+model EventRsvp {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  status  String // GOING, MAYBE, NOT_GOING
+
+  @@unique([userId, eventId])
+}
+
+model EventPoll {
+  id       String @id @default(cuid())
+  question String
+  eventId  String
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  options EventPollOption[]
+}
+
+model EventPollOption {
+  id     String @id @default(cuid())
+  text   String
+  pollId String
+  poll   EventPoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  votes EventPollVote[]
+}
+
+model EventPollVote {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+  optionId String
+  option   EventPollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, optionId])
+}
+
+// === TUMBA MARKET (Betting) ===
+
+model Bet {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  closingDate DateTime
+  status      String   @default("OPEN") // OPEN, CLOSED, RESOLVED
+  resolvedOptionId String?
+  createdAt   DateTime @default(now())
+
+  options BetOption[]
+}
+
+model BetOption {
+  id    String @id @default(cuid())
+  text  String
+  betId String
+  bet   Bet    @relation(fields: [betId], references: [id], onDelete: Cascade)
+
+  wagers Wager[]
+}
+
+model Wager {
+  id          String    @id @default(cuid())
+  amount      Int
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  betOptionId String
+  betOption   BetOption @relation(fields: [betOptionId], references: [id], onDelete: Cascade)
+  payout      Int?
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, betOptionId])
+}
+
+// === SHARED ALBUM ===
+
+model Album {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+
+  media Media[]
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  url       String
+  caption   String?
+  type      String   @default("image") // image, video
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  albumId   String?
+  album     Album?   @relation(fields: [albumId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+}
+
+// === TUMBA SHOP ===
+
+model ShopItem {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  price       Int
+  imageUrl    String?
+  category    String   @default("general")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchases Purchase[]
+}
+
+model Purchase {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  shopItemId String
+  shopItem   ShopItem @relation(fields: [shopItemId], references: [id])
+  price      Int      // price at time of purchase
+  createdAt  DateTime @default(now())
+}
+
+// === NOTIFICATIONS ===
+
+model Notification {
+  id          String   @id @default(cuid())
+  recipientId String
+  recipient   User     @relation("notificationsReceived", fields: [recipientId], references: [id], onDelete: Cascade)
+  actorId     String
+  actor       User     @relation("notificationsSent", fields: [actorId], references: [id], onDelete: Cascade)
+  type        String   // BET, EVENT, HIGHLIGHT
+  message     String
+  targetUrl   String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([recipientId, isRead])
+  @@index([recipientId, createdAt])
+}
+
+// === ACTIVITY LOG (hosting / car / etc.) ===
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // HOST, CAR
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([type])
+  @@index([userId])
+}
