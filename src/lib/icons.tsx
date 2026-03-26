@@ -45,6 +45,10 @@ export {
   Package      as PackageIcon,
   Library      as LibraryIcon,
   Trophy       as TrophyIcon,
+  Crown        as CrownIcon,
+  Medal        as MedalIcon,
+  Flame        as FlameIcon,
+  Star         as StarIcon,
 
   // ── Notifications ────────────────────────────────────────────────────────
   Bell         as BellIcon,

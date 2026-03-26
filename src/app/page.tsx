@@ -15,9 +15,11 @@ import {
   AlbumIcon,
   HostIcon,
   CarIcon,
-  WearIndexIcon,
+  TrophyIcon,
+  ChevronRightIcon,
 } from "@/lib/icons";
-import { CoinAmountMd, CoinAmountSm } from "@/components/TumbaCoin";
+import TumbaCoinIcon from "@/components/TumbaCoinIcon";
+import { CoinAmountSm } from "@/components/TumbaCoin";
 
 interface WearEntry {
   userId: string;
@@ -52,6 +54,13 @@ const QUICK_ACCESS: { icon: LucideIcon; label: string; href: string }[] = [
   { icon: AlbumIcon,      label: "Album",      href: "/album"      },
 ];
 
+const RANK_COLORS = [
+  "from-yellow-400 to-amber-500",
+  "from-gray-300 to-gray-400",
+  "from-amber-600 to-amber-700",
+];
+const RANK_TEXT = ["text-yellow-400", "text-gray-300", "text-amber-500"];
+
 export default function Home() {
   const { data: session } = useSession();
   const [stats, setStats] = useState<ActivityStats | null>(null);
@@ -78,7 +87,6 @@ export default function Home() {
 
   const currentUser = users.find((u) => u.id === userId);
   const myWear = stats?.wearIndex.find((w) => w.userId === userId);
-  const maxWear = stats?.wearIndex?.[0]?.wearIndex || 1;
   const totalCoins = users.reduce((sum, u) => sum + u.tumbaCoins, 0);
 
   /* ── Logged-out view ── */
@@ -117,71 +125,94 @@ export default function Home() {
     );
   }
 
+  const myRank = stats?.wearIndex.findIndex((w) => w.userId === userId);
+  const topLeaderboard = stats?.wearIndex.filter((w) => w.wearIndex > 0).slice(0, 5) ?? [];
+  const maxWear = topLeaderboard[0]?.wearIndex || 1;
+
   /* ── Logged-in view ── */
   return (
-    <div className="max-w-2xl mx-auto px-4 py-5 space-y-4 bg-mesh min-h-[calc(100vh-4rem)]">
+    <div className="max-w-2xl mx-auto px-4 py-5 space-y-5 bg-mesh min-h-[calc(100vh-4rem)]">
 
-      {/* User Profile Card */}
-      <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] glow-accent">
-        <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-full bg-gradient-to-br from-tumba-400 to-neon-pink flex items-center justify-center text-2xl font-bold text-white shrink-0">
+      {/* ════════════════════════════════════════════════════════════
+          1) PREMIUM USER HEADER / PROFILE CARD
+          ════════════════════════════════════════════════════════════ */}
+      <div className="relative overflow-hidden p-5 rounded-2xl border border-tumba-500/20 bg-gradient-to-br from-tumba-900/40 via-[var(--bg-card)] to-[var(--bg-card)] shadow-[0_0_40px_rgba(192,38,211,0.08)]">
+        {/* Decorative glow */}
+        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-tumba-500/[0.07] blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-neon-pink/[0.04] blur-2xl pointer-events-none" />
+
+        <div className="relative flex items-start gap-4">
+          {/* Large avatar */}
+          <div className="h-[72px] w-[72px] rounded-2xl bg-gradient-to-br from-tumba-400 to-neon-pink flex items-center justify-center text-2xl font-extrabold text-white shrink-0 shadow-lg shadow-tumba-500/20">
             {session.user?.name?.[0]?.toUpperCase()}
           </div>
+
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-bold">{session.user?.name}</h2>
+              <h2 className="text-xl font-extrabold tracking-tight">{session.user?.name}</h2>
               {currentUser?.status && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-tumba-500/15 text-tumba-400 border border-tumba-500/20 shrink-0">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-tumba-500/15 text-tumba-400 border border-tumba-500/20 shrink-0 font-medium">
                   {currentUser.status}
                 </span>
               )}
             </div>
-            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-              Member since {currentUser ? new Date(currentUser.createdAt).getFullYear() : "—"}
+            {myRank !== undefined && myRank >= 0 && (
+              <p className="text-xs text-tumba-400/70 mt-0.5 font-medium">
+                Rank #{myRank + 1} on leaderboard
+              </p>
+            )}
+            <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+              Member since {currentUser ? new Date(currentUser.createdAt).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "—"}
             </p>
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="flex gap-3 mt-4 pt-4 border-t border-[var(--border)]">
-          <div className="flex-1 text-center py-2.5 rounded-xl bg-[var(--bg-primary)]">
-            <div className="flex justify-center">
-              <CoinAmountMd amount={currentUser?.tumbaCoins ?? 0} />
+        {/* ── Balance + Stats Row ── */}
+        <div className="relative flex gap-3 mt-5 pt-4 border-t border-white/[0.06]">
+          {/* TumbaCoin Balance — Hero display */}
+          <div className="flex-[1.3] py-3 px-3 rounded-xl bg-gradient-to-br from-tumba-500/[0.12] to-transparent border border-tumba-500/15">
+            <div className="flex items-center gap-2">
+              <TumbaCoinIcon size={42} />
+              <span className="text-2xl font-extrabold text-tumba-300 tabular-nums">
+                {currentUser?.tumbaCoins?.toLocaleString("en-US") ?? 0}
+              </span>
             </div>
-            <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">Balance</p>
+            <p className="text-[10px] text-tumba-400/60 font-semibold mt-1 uppercase tracking-wider">TumbaCoins</p>
           </div>
-          <div className="flex-1 text-center py-2.5 rounded-xl bg-[var(--bg-primary)]">
-            <p className="text-lg font-bold">{myWear?.hostCount ?? 0}</p>
-            <p className="text-[10px] text-[var(--text-secondary)] flex items-center justify-center gap-1 mt-0.5">
-              <HostIcon size={10} strokeWidth={1.75} /> Hosted
+          <div className="flex-1 text-center py-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+            <p className="text-xl font-extrabold">{myWear?.hostCount ?? 0}</p>
+            <p className="text-[10px] text-[var(--text-secondary)] flex items-center justify-center gap-1 mt-0.5 font-medium">
+              <HostIcon size={10} strokeWidth={2} /> Hosted
             </p>
           </div>
-          <div className="flex-1 text-center py-2.5 rounded-xl bg-[var(--bg-primary)]">
-            <p className="text-lg font-bold">{myWear?.carCount ?? 0}</p>
-            <p className="text-[10px] text-[var(--text-secondary)] flex items-center justify-center gap-1 mt-0.5">
-              <CarIcon size={10} strokeWidth={1.75} /> Drove
+          <div className="flex-1 text-center py-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+            <p className="text-xl font-extrabold">{myWear?.carCount ?? 0}</p>
+            <p className="text-[10px] text-[var(--text-secondary)] flex items-center justify-center gap-1 mt-0.5 font-medium">
+              <CarIcon size={10} strokeWidth={2} /> Drove
             </p>
           </div>
         </div>
       </div>
 
-      {/* Group Overview */}
+      {/* ════════════════════════════════════════════════════════════
+          2) GROUP OVERVIEW — Compact stats strip
+          ════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] text-center">
-          <p className="text-lg font-bold text-tumba-400">{users.length || "—"}</p>
-          <p className="text-xs text-[var(--text-secondary)] mt-0.5">Members</p>
+        <div className="card-premium p-3.5 text-center">
+          <p className="text-lg font-extrabold text-tumba-400">{users.length || "—"}</p>
+          <p className="text-[10px] text-[var(--text-secondary)] mt-0.5 font-medium uppercase tracking-wider">Members</p>
         </div>
-        <div className="p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] text-center">
+        <div className="card-premium p-3.5 text-center">
           <div className="flex justify-center">
             <CoinAmountSm amount={totalCoins} />
           </div>
-          <p className="text-xs text-[var(--text-secondary)] mt-0.5">Total TC</p>
+          <p className="text-[10px] text-[var(--text-secondary)] mt-0.5 font-medium uppercase tracking-wider">Total TC</p>
         </div>
-        <div className="p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)]">
-          <p className="text-[10px] text-[var(--text-secondary)] mb-1 flex items-center gap-1">
-            <HostIcon size={10} strokeWidth={1.75} /> Last Host
+        <div className="card-premium p-3.5">
+          <p className="text-[10px] text-[var(--text-secondary)] mb-1 flex items-center gap-1 font-medium uppercase tracking-wider">
+            <HostIcon size={10} strokeWidth={2} /> Last Host
           </p>
-          <p className="text-sm font-semibold truncate">
+          <p className="text-sm font-bold truncate">
             {stats?.lastHost?.name ?? "—"}
           </p>
           {stats?.lastHost && (
@@ -193,11 +224,11 @@ export default function Home() {
             </p>
           )}
         </div>
-        <div className="p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)]">
-          <p className="text-[10px] text-[var(--text-secondary)] mb-1 flex items-center gap-1">
-            <CarIcon size={10} strokeWidth={1.75} /> Last Driver
+        <div className="card-premium p-3.5">
+          <p className="text-[10px] text-[var(--text-secondary)] mb-1 flex items-center gap-1 font-medium uppercase tracking-wider">
+            <CarIcon size={10} strokeWidth={2} /> Last Driver
           </p>
-          <p className="text-sm font-semibold truncate">
+          <p className="text-sm font-bold truncate">
             {stats?.lastCar?.name ?? "—"}
           </p>
           {stats?.lastCar && (
@@ -211,106 +242,108 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Quick Access */}
-      <div>
-        <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">
-          Quick Access
-        </p>
-        <div className="grid grid-cols-4 gap-3">
-          {QUICK_ACCESS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex flex-col items-center gap-2 py-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] hover:border-tumba-500/30 transition-all group"
-              >
-                <div className="h-10 w-10 rounded-xl bg-tumba-500/10 flex items-center justify-center group-hover:bg-tumba-500/20 transition-colors">
-                  <Icon size={20} strokeWidth={1.75} className="text-tumba-400" />
-                </div>
-                <span className="text-[11px] font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors leading-tight text-center">
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Wear Index */}
-      {stats && stats.wearIndex.length > 0 && stats.wearIndex.some((w) => w.wearIndex > 0) && (
-        <div className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)]">
-          <div className="flex items-start gap-2 mb-4">
-            <WearIndexIcon size={18} strokeWidth={1.75} className="text-tumba-400 mt-0.5 shrink-0" />
-            <div>
-              <h3 className="text-base font-bold leading-tight">Wear Index</h3>
-              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                Hosting &times;3 + rides &times;2
-              </p>
+      {/* ════════════════════════════════════════════════════════════
+          3) MINI LEADERBOARD
+          ════════════════════════════════════════════════════════════ */}
+      {topLeaderboard.length > 0 && (
+        <div className="card-premium p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-yellow-400/20 to-amber-500/10 border border-yellow-400/15 flex items-center justify-center">
+                <TrophyIcon size={18} strokeWidth={1.75} className="text-yellow-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold leading-tight">Leaderboard</h3>
+                <p className="text-[10px] text-[var(--text-secondary)]">Top contributors</p>
+              </div>
             </div>
+            <Link
+              href="/leaderboard"
+              className="flex items-center gap-1 text-xs font-semibold text-tumba-400 hover:text-tumba-300 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-tumba-500/10"
+            >
+              View all
+              <ChevronRightIcon size={14} strokeWidth={2} />
+            </Link>
           </div>
 
-          <div className="space-y-2.5">
-            {stats.wearIndex
-              .filter((w) => w.wearIndex > 0)
-              .map((entry, i) => {
-                const pct = Math.max((entry.wearIndex / maxWear) * 100, 4);
-                return (
-                  <div key={entry.userId} className="flex items-center gap-3">
-                    <div className="w-5 shrink-0 text-center">
-                      <span
-                        className={`text-xs font-bold ${
-                          i === 0 ? "text-tumba-400" : "text-[var(--text-secondary)]"
-                        }`}
+          <div className="space-y-2">
+            {topLeaderboard.map((entry, i) => {
+              const pct = Math.max((entry.wearIndex / maxWear) * 100, 4);
+              const isMe = entry.userId === userId;
+              return (
+                <div
+                  key={entry.userId}
+                  className={`flex items-center gap-3 p-2 rounded-xl transition-all ${
+                    isMe ? "bg-tumba-500/[0.06] border border-tumba-500/15" : "hover:bg-white/[0.02]"
+                  }`}
+                >
+                  {/* Rank */}
+                  <div className="w-6 shrink-0 text-center">
+                    {i < 3 ? (
+                      <div
+                        className={`w-6 h-6 rounded-full bg-gradient-to-br ${RANK_COLORS[i]} flex items-center justify-center`}
                       >
-                        {i + 1}
+                        <span className="text-[10px] font-extrabold text-black">{i + 1}</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs font-bold text-[var(--text-secondary)]">{i + 1}</span>
+                    )}
+                  </div>
+
+                  {/* Avatar */}
+                  <div
+                    className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
+                      i === 0
+                        ? "bg-gradient-to-br from-tumba-400 to-neon-pink ring-1 ring-yellow-400/30"
+                        : "bg-gradient-to-br from-[var(--bg-card-hover)] to-[var(--border)]"
+                    }`}
+                  >
+                    {entry.name[0]?.toUpperCase()}
+                  </div>
+
+                  {/* Name + bar */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-sm font-semibold truncate ${isMe ? "text-tumba-300" : ""}`}>
+                        {entry.name}
                       </span>
-                    </div>
-                    <div
-                      className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
-                        i === 0
-                          ? "bg-gradient-to-br from-tumba-400 to-neon-pink"
-                          : "bg-gradient-to-br from-[var(--border)] to-[var(--bg-card-hover)]"
-                      }`}
-                    >
-                      {entry.name[0]?.toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium truncate">{entry.name}</span>
-                        <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)] shrink-0 ml-2">
-                          <span className="flex items-center gap-0.5">
-                            <HostIcon size={10} strokeWidth={1.75} />
-                            {entry.hostCount}
-                          </span>
-                          <span className="flex items-center gap-0.5">
-                            <CarIcon size={10} strokeWidth={1.75} />
-                            {entry.carCount}
-                          </span>
-                          <span className="font-bold text-tumba-400">{entry.wearIndex}</span>
-                        </div>
+                      <div className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)] shrink-0 ml-2">
+                        <span className="flex items-center gap-0.5">
+                          <HostIcon size={10} strokeWidth={2} />
+                          {entry.hostCount}
+                        </span>
+                        <span className="flex items-center gap-0.5">
+                          <CarIcon size={10} strokeWidth={2} />
+                          {entry.carCount}
+                        </span>
+                        <span className={`font-extrabold ${i < 3 ? RANK_TEXT[i] : "text-tumba-400"}`}>
+                          {entry.wearIndex}
+                        </span>
                       </div>
-                      <div className="h-2 w-full bg-[var(--bg-primary)] rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full animate-grow-bar ${
-                            i === 0
-                              ? "bg-gradient-to-r from-tumba-500 to-neon-pink"
-                              : i === 1
-                                ? "bg-gradient-to-r from-tumba-600 to-tumba-500"
-                                : "bg-tumba-700"
-                          }`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
+                    </div>
+                    <div className="h-1.5 w-full bg-[var(--bg-primary)] rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full animate-grow-bar ${
+                          i === 0
+                            ? "bg-gradient-to-r from-yellow-500 to-amber-400"
+                            : i === 1
+                              ? "bg-gradient-to-r from-gray-400 to-gray-300"
+                              : i === 2
+                                ? "bg-gradient-to-r from-amber-700 to-amber-500"
+                                : "bg-gradient-to-r from-tumba-700 to-tumba-500"
+                        }`}
+                        style={{ width: `${pct}%` }}
+                      />
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              );
+            })}
           </div>
 
-          {stats.wearIndex.filter((w) => w.wearIndex === 0).length > 0 && (
-            <div className="mt-4 pt-3 border-t border-[var(--border)]">
-              <p className="text-xs text-[var(--text-secondary)]">
+          {stats && stats.wearIndex.filter((w) => w.wearIndex === 0).length > 0 && (
+            <div className="mt-3 pt-3 border-t border-white/[0.04]">
+              <p className="text-[11px] text-[var(--text-secondary)]">
                 No contributions yet:{" "}
                 {stats.wearIndex
                   .filter((w) => w.wearIndex === 0)
@@ -321,6 +354,34 @@ export default function Home() {
           )}
         </div>
       )}
+
+      {/* ════════════════════════════════════════════════════════════
+          4) QUICK ACCESS — Feature grid
+          ════════════════════════════════════════════════════════════ */}
+      <div>
+        <p className="text-[10px] font-semibold text-[var(--text-secondary)] uppercase tracking-widest mb-3">
+          Quick Access
+        </p>
+        <div className="grid grid-cols-4 gap-3">
+          {QUICK_ACCESS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="card-premium flex flex-col items-center gap-2.5 py-4 group hover:border-tumba-500/25 hover:shadow-[0_0_15px_rgba(192,38,211,0.06)] active:scale-[0.97] transition-all"
+              >
+                <div className="h-10 w-10 rounded-xl bg-tumba-500/10 flex items-center justify-center group-hover:bg-tumba-500/20 group-hover:shadow-[0_0_12px_rgba(192,38,211,0.1)] transition-all">
+                  <Icon size={20} strokeWidth={1.75} className="text-tumba-400" />
+                </div>
+                <span className="text-[11px] font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors leading-tight text-center">
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

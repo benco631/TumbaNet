@@ -11,6 +11,7 @@ import {
   TumbasIcon,
   EventsIcon,
   MarketIcon,
+  TrophyIcon,
   HighlightsIcon,
   DictionaryIcon,
   ShopIcon,
@@ -19,15 +20,16 @@ import {
 } from "@/lib/icons";
 
 const PRIMARY_TABS = [
-  { href: "/",       label: "Home",   icon: HostIcon   },
-  { href: "/tumbas", label: "Tumbas", icon: TumbasIcon },
-  { href: "/events", label: "Events", icon: EventsIcon },
-  { href: "/market", label: "Market", icon: MarketIcon },
+  { href: "/",            label: "Home",        icon: HostIcon    },
+  { href: "/tumbas",      label: "Tumbas",      icon: TumbasIcon  },
+  { href: "/events",      label: "Events",      icon: EventsIcon  },
+  { href: "/leaderboard", label: "Leaderboard", icon: TrophyIcon  },
 ];
 
 const MORE_ITEMS = [
   { href: "/sikum",      label: "Highlights", icon: HighlightsIcon },
   { href: "/dictionary", label: "Dictionary",  icon: DictionaryIcon },
+  { href: "/market",     label: "Market",      icon: MarketIcon     },
   { href: "/shop",       label: "Shop",        icon: ShopIcon       },
   { href: "/album",      label: "Album",       icon: AlbumIcon      },
 ];

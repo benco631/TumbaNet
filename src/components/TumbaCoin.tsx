@@ -17,11 +17,11 @@ interface CoinAmountProps {
   showLabel?: boolean;
 }
 
-/** Small — for navbars, lists, compact stats (icon 16px) */
+/** Small — for navbars, lists, compact stats (icon 20px) */
 export function CoinAmountSm({ amount, className = "", showLabel = false }: CoinAmountProps) {
   return (
-    <span className={`inline-flex items-center gap-1 ${className}`}>
-      <TumbaCoinIcon size={16} />
+    <span className={`inline-flex items-center gap-1.5 ${className}`}>
+      <TumbaCoinIcon size={26} />
       <span className="text-sm font-semibold text-tumba-300 tabular-nums">
         {formatNumber(amount)}
       </span>
@@ -30,11 +30,11 @@ export function CoinAmountSm({ amount, className = "", showLabel = false }: Coin
   );
 }
 
-/** Medium — for cards, rows, profile summaries (icon 22px) */
+/** Medium — for cards, rows, profile summaries (icon 26px) */
 export function CoinAmountMd({ amount, className = "", showLabel = false }: CoinAmountProps) {
   return (
-    <span className={`inline-flex items-center gap-1.5 ${className}`}>
-      <TumbaCoinIcon size={22} />
+    <span className={`inline-flex items-center gap-2 ${className}`}>
+      <TumbaCoinIcon size={34} />
       <span className="text-lg font-bold text-tumba-300 tabular-nums">
         {formatNumber(amount)}
       </span>
@@ -43,11 +43,11 @@ export function CoinAmountMd({ amount, className = "", showLabel = false }: Coin
   );
 }
 
-/** Large — for wallet / balance / hero display (icon 32px) */
+/** Large — for wallet / balance / hero display (icon 38px) */
 export function CoinAmountLg({ amount, className = "", showLabel = true }: CoinAmountProps) {
   return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
-      <TumbaCoinIcon size={32} />
+    <span className={`inline-flex items-center gap-2.5 ${className}`}>
+      <TumbaCoinIcon size={48} />
       <span className="text-2xl font-extrabold text-tumba-300 tabular-nums">
         {formatNumber(amount)}
       </span>
@@ -74,7 +74,7 @@ export function CoinDelta({ amount, className = "" }: CoinDeltaProps) {
           : "text-red-400/80"
       } ${className}`}
     >
-      <TumbaCoinIcon size={12} />
+      <TumbaCoinIcon size={20} />
       <span>{isGain ? "+" : ""}{formatNumber(amount)}</span>
     </span>
   );
@@ -96,7 +96,7 @@ export function CoinBadge({ amount, className = "" }: CoinBadgeProps) {
         shadow-[0_0_12px_rgba(192,38,211,0.08)]
         ${className}`}
     >
-      <TumbaCoinIcon size={20} />
+      <TumbaCoinIcon size={30} />
       <span className="text-base font-bold text-tumba-300 tabular-nums">
         {formatNumber(amount)}
       </span>

@@ -143,12 +143,12 @@ export default function NotificationBell() {
       {/* Bell Button */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="relative p-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)] transition-colors"
+        className="relative p-2.5 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)] transition-all group"
         aria-label="Notifications"
       >
-        <BellIcon size={20} strokeWidth={1.75} />
+        <BellIcon size={24} strokeWidth={1.75} className="group-hover:scale-110 transition-transform" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center px-1 text-[10px] font-bold text-white bg-gradient-to-r from-tumba-500 to-neon-pink rounded-full leading-none">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[20px] h-[20px] flex items-center justify-center px-1.5 text-[10px] font-bold text-white bg-gradient-to-r from-tumba-500 to-neon-pink rounded-full leading-none shadow-[0_0_10px_rgba(192,38,211,0.4)] animate-pulse">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
