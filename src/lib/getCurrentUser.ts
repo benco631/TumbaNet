@@ -4,11 +4,12 @@ import { prisma } from "@/lib/prisma";
 
 export async function getCurrentUser() {
   const session = await getServerSession(authOptions);
+  const userId = (session?.user as { id?: string } | undefined)?.id;
 
-  if (!session?.user?.id) return null;
+  if (!userId) return null;
 
   const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: userId },
   });
 
   return user;

@@ -14,13 +14,8 @@ interface CreateNotificationParams {
  * Create notifications for all users except the actor.
  * Runs in the background — does not block the response.
  */
-export async function notifyAllUsers({
-  actorId,
-  actorName: _actorName,
-  type,
-  message,
-  targetUrl,
-}: CreateNotificationParams) {
+export async function notifyAllUsers(params: CreateNotificationParams) {
+  const { actorId, type, message, targetUrl } = params;
   const users = await prisma.user.findMany({
     where: { id: { not: actorId } },
     select: { id: true },
