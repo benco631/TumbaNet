@@ -65,7 +65,6 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const fetchNotifications = useCallback(async () => {

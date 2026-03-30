@@ -16,7 +16,7 @@ interface CreateNotificationParams {
  */
 export async function notifyAllUsers({
   actorId,
-  actorName,
+  actorName: _actorName,
   type,
   message,
   targetUrl,

@@ -2,13 +2,10 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState, useCallback } from "react";
-import { CoinAmountSm } from "@/components/TumbaCoin";
 import {
   TrophyIcon,
-  CrownIcon,
   HostIcon,
   CarIcon,
-  WearIndexIcon,
   FlameIcon,
 } from "@/lib/icons";
 

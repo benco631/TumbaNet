@@ -26,8 +26,8 @@ export default function TestAuthPage() {
 
       const data = await res.json();
       setResult(JSON.stringify(data, null, 2));
-    } catch (error: any) {
-      setResult(error.message || "Error");
+    } catch (error: unknown) {
+      setResult(error instanceof Error ? error.message : "Error");
     }
   };
 
