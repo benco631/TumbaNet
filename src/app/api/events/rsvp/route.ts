@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 // Set RSVP status for an event
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);

@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 // GET aggregated activity stats for the Wear Index + last host/car
 export async function GET() {
   const session = await getServerSession(authOptions);

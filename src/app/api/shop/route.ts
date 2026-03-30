@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 // GET all shop items (active only for regular users, all for admin)
 export async function GET() {
   const session = await getServerSession(authOptions);

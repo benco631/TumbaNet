@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 // Resolve a bet - creator or admin picks the winning option
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
