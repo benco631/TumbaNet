@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
@@ -21,7 +20,8 @@ model User {
   status     String   @default("")
   isAdmin    Boolean  @default(false)
   createdAt  DateTime @default(now())
-
+  firebaseUid String? @unique
+  
   entries              Entry[]
   dictionaryEntries    DictionaryEntry[]
   dictionaryComments   DictionaryComment[]
@@ -37,6 +37,7 @@ model User {
   activityLogs         ActivityLog[]
   notificationsReceived Notification[] @relation("notificationsReceived")
   notificationsSent     Notification[] @relation("notificationsSent")
+  
 }
 
 model Entry {

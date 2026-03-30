@@ -1,0 +1,54 @@
+type User @table {
+  username: String!
+  email: String!
+  createdAt: Timestamp!
+  displayName: String
+  bio: String
+  profilePictureUrl: String
+}
+
+type Group @table {
+  name: String!
+  createdAt: Timestamp!
+  creator: User
+  description: String
+  groupPictureUrl: String
+}
+
+type Membership @table(key: ["user", "group"]) {
+  user: User!
+  group: Group!
+  joinedAt: Timestamp!
+  role: String
+}
+
+type Post @table {
+  content: String!
+  createdAt: Timestamp!
+  author: User
+  group: Group
+  imageUrl: String
+  videoUrl: String
+}
+
+type Event @table {
+  title: String!
+  eventDate: Date!
+  eventTime: String!
+  createdAt: Timestamp!
+  creator: User
+  group: Group
+  description: String
+  location: String
+}
+
+type Comment @table {
+  text: String!
+  createdAt: Timestamp!
+  author: User
+  post: Post
+  event: Event
+  # Note: Poll is not defined in the provided data model,
+  # so we are omitting the reference for now.
+  # poll: Poll
+}
