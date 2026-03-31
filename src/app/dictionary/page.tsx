@@ -4,6 +4,9 @@ import { useSession } from "next-auth/react";
 import { DictionaryIcon, SearchIcon, UpvoteIcon, DownvoteIcon, CommentsIcon, CloseIcon } from "@/lib/icons";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import { MotionPage } from "@/components/motion";
+import { staggerContainer, fadeInUp } from "@/lib/animations";
 
 interface DictComment {
   id: string;
@@ -158,7 +161,7 @@ export default function DictionaryPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <MotionPage className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
@@ -245,7 +248,7 @@ export default function DictionaryPage() {
       </div>
 
       {/* Entries */}
-      <div className="space-y-4">
+      <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-4">
         {entries.length === 0 ? (
           <div className="text-center py-16 text-[var(--text-secondary)]">
             <DictionaryIcon size={48} strokeWidth={1.25} className="mb-4 text-[var(--text-secondary)]" />
@@ -260,7 +263,8 @@ export default function DictionaryPage() {
           </div>
         ) : (
           entries.map((entry) => (
-            <div
+            <motion.div
+              variants={fadeInUp}
               key={entry.id}
               className="p-5 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] transition-all"
             >
@@ -403,10 +407,10 @@ export default function DictionaryPage() {
                   </div>
                 </div>
               )}
-            </div>
+            </motion.div>
           ))
         )}
-      </div>
-    </div>
+      </motion.div>
+    </MotionPage>
   );
 }

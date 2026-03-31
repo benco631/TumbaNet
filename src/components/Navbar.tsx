@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import type { LucideIcon } from "lucide-react";
+import { motion } from "framer-motion";
 import Logo from "./Logo";
 import ProfileMenu from "./ProfileMenu";
 import NotificationBell from "./NotificationBell";
@@ -68,7 +69,11 @@ export default function Navbar() {
                     <Icon size={15} strokeWidth={1.75} />
                     <span>{tab.shortName}</span>
                     {isActive && (
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-gradient-to-r from-tumba-500 to-neon-pink rounded-full" />
+                      <motion.div
+                        layoutId="navbar-tab-indicator"
+                        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-gradient-to-r from-tumba-500 to-neon-pink rounded-full"
+                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                      />
                     )}
                   </Link>
                 );
@@ -89,7 +94,11 @@ export default function Navbar() {
                     <Icon size={15} strokeWidth={1.75} />
                     <span>{tab.shortName}</span>
                     {isActive && (
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-gradient-to-r from-tumba-500 to-neon-pink rounded-full" />
+                      <motion.div
+                        layoutId="navbar-tab-indicator"
+                        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-gradient-to-r from-tumba-500 to-neon-pink rounded-full"
+                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                      />
                     )}
                   </Link>
                 );

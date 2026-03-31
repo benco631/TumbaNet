@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { TumbasIcon } from "@/lib/icons";
 import { CoinAmountMd } from "@/components/TumbaCoin";
+import { MotionPage } from "@/components/motion";
 
 interface TumbaUser {
   id: string;
@@ -79,7 +80,7 @@ export default function TumbasPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <MotionPage className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold flex items-center gap-3">
           <TumbasIcon size={32} strokeWidth={1.75} className="text-tumba-400 shrink-0" />
@@ -239,6 +240,6 @@ export default function TumbasPage() {
           <p className="text-sm mt-1">Be the first to join!</p>
         </div>
       )}
-    </div>
+    </MotionPage>
   );
 }

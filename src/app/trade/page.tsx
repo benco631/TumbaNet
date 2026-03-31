@@ -1,10 +1,11 @@
 "use client";
 
 import { TradeIcon } from "@/lib/icons";
+import { MotionPage } from "@/components/motion";
 
 export default function TradePage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4">
+    <MotionPage className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4">
       <div className="text-center max-w-md">
         <div className="flex justify-center mb-6">
           <div className="h-20 w-20 rounded-2xl bg-tumba-500/10 flex items-center justify-center">
@@ -20,6 +21,6 @@ export default function TradePage() {
           Coming Soon...
         </div>
       </div>
-    </div>
+    </MotionPage>
   );
 }

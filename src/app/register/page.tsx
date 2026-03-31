@@ -3,7 +3,10 @@
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useState } from "react";
+import { motion } from "framer-motion";
 import Logo from "@/components/Logo";
+import { MotionPage } from "@/components/motion";
+import { buttonMotion } from "@/lib/animations";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -31,7 +34,6 @@ export default function RegisterPage() {
       return;
     }
 
-    // Auto-login after registration
     await signIn("credentials", {
       email,
       password,
@@ -40,24 +42,36 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] px-4 bg-mesh">
+    <MotionPage className="flex items-center justify-center min-h-[calc(100vh-4rem)] px-4 bg-mesh">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="text-center mb-8"
+        >
           <div className="flex justify-center mb-4"><Logo size="lg" /></div>
           <h1 className="text-2xl font-bold">Join the Tumbas</h1>
           <p className="text-[var(--text-secondary)] mt-2">
             Create your account
           </p>
-        </div>
+        </motion.div>
 
-        <form
+        <motion.form
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.4, ease: "easeOut" }}
           onSubmit={handleSubmit}
           className="p-8 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] space-y-5"
         >
           {error && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center"
+            >
               {error}
-            </div>
+            </motion.div>
           )}
 
           <div>
@@ -103,13 +117,14 @@ export default function RegisterPage() {
             />
           </div>
 
-          <button
+          <motion.button
+            {...buttonMotion}
             type="submit"
             disabled={loading}
             className="w-full py-3 rounded-xl bg-gradient-to-r from-tumba-500 to-neon-blue text-white font-semibold hover:from-tumba-400 hover:to-tumba-500 transition-all shadow-lg shadow-tumba-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Creating account..." : "Join the Tumbas"}
-          </button>
+          </motion.button>
 
           <p className="text-center text-sm text-[var(--text-secondary)]">
             Already a Tumba?{" "}
@@ -120,8 +135,8 @@ export default function RegisterPage() {
               Login
             </Link>
           </p>
-        </form>
+        </motion.form>
       </div>
-    </div>
+    </MotionPage>
   );
 }

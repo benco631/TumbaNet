@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { slideDown, fadeInUp, staggerContainer } from "@/lib/animations";
 import {
   BellIcon,
   CheckAllIcon,
@@ -154,58 +156,66 @@ export default function NotificationBell() {
       </button>
 
       {/* Dropdown Panel */}
-      {open && (
-        <div className="absolute right-0 top-full mt-2 w-[340px] sm:w-[380px] max-h-[480px] bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden z-[100] flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-              Notifications
-            </h3>
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllRead}
-                className="flex items-center gap-1 text-xs text-tumba-400 hover:text-tumba-300 transition-colors"
-              >
-                <CheckAllIcon size={14} />
-                Mark all read
-              </button>
-            )}
-          </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            variants={slideDown}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="absolute right-0 top-full mt-2 w-[340px] sm:w-[380px] max-h-[480px] bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden z-[100] flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+                Notifications
+              </h3>
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllRead}
+                  className="flex items-center gap-1 text-xs text-tumba-400 hover:text-tumba-300 transition-colors"
+                >
+                  <CheckAllIcon size={14} />
+                  Mark all read
+                </button>
+              )}
+            </div>
 
-          {/* Notification List */}
-          <div className="flex-1 overflow-y-auto overscroll-contain">
-            {notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 px-4">
-                <BellIcon
-                  size={36}
-                  strokeWidth={1.25}
-                  className="text-[var(--text-secondary)] opacity-40 mb-3"
-                />
-                <p className="text-sm text-[var(--text-secondary)]">
-                  No notifications yet
-                </p>
-              </div>
-            ) : (
-              <>
-                {todayNotifs.length > 0 && (
-                  <NotificationGroup
-                    label="Today"
-                    items={todayNotifs}
-                    onClick={handleClick}
+            {/* Notification List */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              {notifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 px-4">
+                  <BellIcon
+                    size={36}
+                    strokeWidth={1.25}
+                    className="text-[var(--text-secondary)] opacity-40 mb-3"
                   />
-                )}
-                {earlierNotifs.length > 0 && (
-                  <NotificationGroup
-                    label="Earlier"
-                    items={earlierNotifs}
-                    onClick={handleClick}
-                  />
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      )}
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    No notifications yet
+                  </p>
+                </div>
+              ) : (
+                <motion.div variants={staggerContainer} initial="hidden" animate="visible">
+                  {todayNotifs.length > 0 && (
+                    <NotificationGroup
+                      label="Today"
+                      items={todayNotifs}
+                      onClick={handleClick}
+                    />
+                  )}
+                  {earlierNotifs.length > 0 && (
+                    <NotificationGroup
+                      label="Earlier"
+                      items={earlierNotifs}
+                      onClick={handleClick}
+                    />
+                  )}
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -230,8 +240,9 @@ function NotificationGroup({
         const Icon = TYPE_ICON[n.type] || BellIcon;
         const color = TYPE_COLOR[n.type] || "text-tumba-400";
         return (
-          <button
+          <motion.button
             key={n.id}
+            variants={fadeInUp}
             onClick={() => onClick(n)}
             className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--bg-card)] ${
               !n.isRead ? "bg-tumba-500/[0.04]" : ""
@@ -264,7 +275,7 @@ function NotificationGroup({
             {!n.isRead && (
               <div className="shrink-0 mt-2 w-2 h-2 rounded-full bg-tumba-400" />
             )}
-          </button>
+          </motion.button>
         );
       })}
     </div>

@@ -4,6 +4,9 @@ import { useSession } from "next-auth/react";
 import { AlbumIcon, UploadIcon, VideoIcon, PhotoIcon, LibraryIcon, CloseIcon } from "@/lib/icons";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { motion } from "framer-motion";
+import { MotionPage } from "@/components/motion";
+import { staggerContainer, fadeInUp } from "@/lib/animations";
 
 interface MediaItem {
   id: string;
@@ -168,7 +171,7 @@ export default function AlbumPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <MotionPage className="max-w-6xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
@@ -354,9 +357,10 @@ export default function AlbumPage() {
             </form>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {albums.map((album) => (
-              <div
+              <motion.div
+                variants={fadeInUp}
                 key={album.id}
                 className="group p-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] transition-all cursor-pointer"
                 onClick={() => { setSelectedAlbum(album.id); setViewMode("gallery"); fetchMedia(album.id); }}
@@ -389,7 +393,7 @@ export default function AlbumPage() {
                     </button>
                   )}
                 </div>
-              </div>
+              </motion.div>
             ))}
             {albums.length === 0 && (
               <div className="col-span-full text-center py-12 text-[var(--text-secondary)]">
@@ -397,13 +401,13 @@ export default function AlbumPage() {
                 <p>No albums yet. Create one to organize your media!</p>
               </div>
             )}
-          </div>
+          </motion.div>
         </div>
       )}
 
       {/* Gallery Grid */}
       {(viewMode === "gallery" || selectedAlbum) && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {media.length === 0 ? (
             <div className="col-span-full text-center py-16 text-[var(--text-secondary)]">
               <AlbumIcon size={48} strokeWidth={1.25} className="mb-4 text-[var(--text-secondary)]" />
@@ -412,7 +416,8 @@ export default function AlbumPage() {
             </div>
           ) : (
             media.map((item) => (
-              <div
+              <motion.div
+                variants={fadeInUp}
                 key={item.id}
                 className="group relative aspect-square rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--bg-card)] cursor-pointer hover:border-tumba-500/30 transition-all"
                 onClick={() => setLightbox(item)}
@@ -440,10 +445,10 @@ export default function AlbumPage() {
                     <CloseIcon size={14} />
                   </button>
                 )}
-              </div>
+              </motion.div>
             ))
           )}
-        </div>
+        </motion.div>
       )}
 
       {/* Lightbox */}
@@ -476,6 +481,6 @@ export default function AlbumPage() {
           </div>
         </div>
       )}
-    </div>
+    </MotionPage>
   );
 }

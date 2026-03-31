@@ -8,6 +8,7 @@ import {
   CarIcon,
   FlameIcon,
 } from "@/lib/icons";
+import { MotionPage } from "@/components/motion";
 
 interface LeaderboardEntry {
   userId: string;
@@ -77,7 +78,7 @@ export default function LeaderboardPage() {
   const rest = entries.slice(3);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 bg-mesh min-h-[calc(100vh-4rem)]">
+    <MotionPage className="max-w-2xl mx-auto px-4 py-6 bg-mesh min-h-[calc(100vh-4rem)]">
       {/* Page Header */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-tumba-500/20 to-neon-pink/10 border border-tumba-500/20 mb-4">
@@ -245,6 +246,6 @@ export default function LeaderboardPage() {
           )}
         </>
       )}
-    </div>
+    </MotionPage>
   );
 }

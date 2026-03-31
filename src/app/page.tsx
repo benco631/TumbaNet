@@ -5,6 +5,9 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import { MotionPage, MotionStagger, MotionItem, MotionCard } from "@/components/motion";
+import { buttonMotion, staggerContainer, fadeInUp } from "@/lib/animations";
 import {
   HighlightsIcon,
   TumbasIcon,
@@ -92,36 +95,65 @@ export default function Home() {
   /* ── Logged-out view ── */
   if (!session) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] bg-mesh px-4">
+      <MotionPage className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] bg-mesh px-4">
         <div className="text-center max-w-md">
-          <div className="flex justify-center mb-6">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="flex justify-center mb-6"
+          >
             <Logo size="xl" />
-          </div>
-          <h1 className="text-4xl font-extrabold mb-3">
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.4 }}
+            className="text-4xl font-extrabold mb-3"
+          >
             <span className="gradient-text">TumbaNet</span>
-          </h1>
-          <p className="text-[var(--text-secondary)] mb-1.5">
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            className="text-[var(--text-secondary)] mb-1.5"
+          >
             The official network of the Tumbas
-          </p>
-          <p className="text-sm text-[var(--text-secondary)]/50 mb-8">
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
+            className="text-sm text-[var(--text-secondary)]/50 mb-8"
+          >
             Hakuna Matata, baby.
-          </p>
-          <div className="flex gap-3 justify-center">
-            <Link
-              href="/login"
-              className="px-8 py-3 rounded-xl bg-gradient-to-r from-tumba-500 to-neon-blue text-white font-semibold hover:from-tumba-400 hover:to-tumba-500 transition-all shadow-lg shadow-tumba-500/25"
-            >
-              Login
-            </Link>
-            <Link
-              href="/register"
-              className="px-8 py-3 rounded-xl border border-tumba-500/30 text-tumba-400 font-semibold hover:bg-tumba-500/10 transition-all"
-            >
-              Join
-            </Link>
-          </div>
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.4 }}
+            className="flex gap-3 justify-center"
+          >
+            <motion.div {...buttonMotion}>
+              <Link
+                href="/login"
+                className="inline-block px-8 py-3 rounded-xl bg-gradient-to-r from-tumba-500 to-neon-blue text-white font-semibold hover:from-tumba-400 hover:to-tumba-500 transition-all shadow-lg shadow-tumba-500/25"
+              >
+                Login
+              </Link>
+            </motion.div>
+            <motion.div {...buttonMotion}>
+              <Link
+                href="/register"
+                className="inline-block px-8 py-3 rounded-xl border border-tumba-500/30 text-tumba-400 font-semibold hover:bg-tumba-500/10 transition-all"
+              >
+                Join
+              </Link>
+            </motion.div>
+          </motion.div>
         </div>
-      </div>
+      </MotionPage>
     );
   }
 
@@ -131,18 +163,20 @@ export default function Home() {
 
   /* ── Logged-in view ── */
   return (
-    <div className="max-w-2xl mx-auto px-4 py-5 space-y-5 bg-mesh min-h-[calc(100vh-4rem)]">
+    <MotionPage className="max-w-2xl mx-auto px-4 py-5 space-y-5 bg-mesh min-h-[calc(100vh-4rem)]">
 
-      {/* ════════════════════════════════════════════════════════════
-          1) PREMIUM USER HEADER / PROFILE CARD
-          ════════════════════════════════════════════════════════════ */}
-      <div className="relative overflow-hidden p-5 rounded-2xl border border-tumba-500/20 bg-gradient-to-br from-tumba-900/40 via-[var(--bg-card)] to-[var(--bg-card)] shadow-[0_0_40px_rgba(192,38,211,0.08)]">
+      {/* 1) PREMIUM USER HEADER / PROFILE CARD */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="relative overflow-hidden p-5 rounded-2xl border border-tumba-500/20 bg-gradient-to-br from-tumba-900/40 via-[var(--bg-card)] to-[var(--bg-card)] shadow-[0_0_40px_rgba(192,38,211,0.08)]"
+      >
         {/* Decorative glow */}
         <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-tumba-500/[0.07] blur-3xl pointer-events-none" />
         <div className="absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-neon-pink/[0.04] blur-2xl pointer-events-none" />
 
         <div className="relative flex items-start gap-4">
-          {/* Large avatar */}
           <div className="h-[72px] w-[72px] rounded-2xl bg-gradient-to-br from-tumba-400 to-neon-pink flex items-center justify-center text-2xl font-extrabold text-white shrink-0 shadow-lg shadow-tumba-500/20">
             {session.user?.name?.[0]?.toUpperCase()}
           </div>
@@ -167,9 +201,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── Balance + Stats Row ── */}
+        {/* Balance + Stats Row */}
         <div className="relative flex gap-3 mt-5 pt-4 border-t border-white/[0.06]">
-          {/* TumbaCoin Balance — Hero display */}
           <div className="flex-[1.3] py-3 px-3 rounded-xl bg-gradient-to-br from-tumba-500/[0.12] to-transparent border border-tumba-500/15">
             <div className="flex items-center gap-2">
               <TumbaCoinIcon size={42} />
@@ -192,23 +225,21 @@ export default function Home() {
             </p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* ════════════════════════════════════════════════════════════
-          2) GROUP OVERVIEW — Compact stats strip
-          ════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="card-premium p-3.5 text-center">
+      {/* 2) GROUP OVERVIEW */}
+      <MotionStagger className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <MotionCard className="card-premium p-3.5 text-center">
           <p className="text-lg font-extrabold text-tumba-400">{users.length || "—"}</p>
           <p className="text-[10px] text-[var(--text-secondary)] mt-0.5 font-medium uppercase tracking-wider">Members</p>
-        </div>
-        <div className="card-premium p-3.5 text-center">
+        </MotionCard>
+        <MotionCard className="card-premium p-3.5 text-center">
           <div className="flex justify-center">
             <CoinAmountSm amount={totalCoins} />
           </div>
           <p className="text-[10px] text-[var(--text-secondary)] mt-0.5 font-medium uppercase tracking-wider">Total TC</p>
-        </div>
-        <div className="card-premium p-3.5">
+        </MotionCard>
+        <MotionCard className="card-premium p-3.5">
           <p className="text-[10px] text-[var(--text-secondary)] mb-1 flex items-center gap-1 font-medium uppercase tracking-wider">
             <HostIcon size={10} strokeWidth={2} /> Last Host
           </p>
@@ -217,14 +248,11 @@ export default function Home() {
           </p>
           {stats?.lastHost && (
             <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
-              {new Date(stats.lastHost.date).toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "short",
-              })}
+              {new Date(stats.lastHost.date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
             </p>
           )}
-        </div>
-        <div className="card-premium p-3.5">
+        </MotionCard>
+        <MotionCard className="card-premium p-3.5">
           <p className="text-[10px] text-[var(--text-secondary)] mb-1 flex items-center gap-1 font-medium uppercase tracking-wider">
             <CarIcon size={10} strokeWidth={2} /> Last Driver
           </p>
@@ -233,20 +261,20 @@ export default function Home() {
           </p>
           {stats?.lastCar && (
             <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">
-              {new Date(stats.lastCar.date).toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "short",
-              })}
+              {new Date(stats.lastCar.date).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
             </p>
           )}
-        </div>
-      </div>
+        </MotionCard>
+      </MotionStagger>
 
-      {/* ════════════════════════════════════════════════════════════
-          3) MINI LEADERBOARD
-          ════════════════════════════════════════════════════════════ */}
+      {/* 3) MINI LEADERBOARD */}
       {topLeaderboard.length > 0 && (
-        <div className="card-premium p-5">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.35 }}
+          className="card-premium p-5"
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-yellow-400/20 to-amber-500/10 border border-yellow-400/15 flex items-center justify-center">
@@ -266,23 +294,21 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="space-y-2">
+          <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-2">
             {topLeaderboard.map((entry, i) => {
               const pct = Math.max((entry.wearIndex / maxWear) * 100, 4);
               const isMe = entry.userId === userId;
               return (
-                <div
+                <motion.div
                   key={entry.userId}
+                  variants={fadeInUp}
                   className={`flex items-center gap-3 p-2 rounded-xl transition-all ${
                     isMe ? "bg-tumba-500/[0.06] border border-tumba-500/15" : "hover:bg-white/[0.02]"
                   }`}
                 >
-                  {/* Rank */}
                   <div className="w-6 shrink-0 text-center">
                     {i < 3 ? (
-                      <div
-                        className={`w-6 h-6 rounded-full bg-gradient-to-br ${RANK_COLORS[i]} flex items-center justify-center`}
-                      >
+                      <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${RANK_COLORS[i]} flex items-center justify-center`}>
                         <span className="text-[10px] font-extrabold text-black">{i + 1}</span>
                       </div>
                     ) : (
@@ -290,7 +316,6 @@ export default function Home() {
                     )}
                   </div>
 
-                  {/* Avatar */}
                   <div
                     className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
                       i === 0
@@ -301,7 +326,6 @@ export default function Home() {
                     {entry.name[0]?.toUpperCase()}
                   </div>
 
-                  {/* Name + bar */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <span className={`text-sm font-semibold truncate ${isMe ? "text-tumba-300" : ""}`}>
@@ -336,10 +360,10 @@ export default function Home() {
                       />
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
 
           {stats && stats.wearIndex.filter((w) => w.wearIndex === 0).length > 0 && (
             <div className="mt-3 pt-3 border-t border-white/[0.04]">
@@ -352,36 +376,35 @@ export default function Home() {
               </p>
             </div>
           )}
-        </div>
+        </motion.div>
       )}
 
-      {/* ════════════════════════════════════════════════════════════
-          4) QUICK ACCESS — Feature grid
-          ════════════════════════════════════════════════════════════ */}
+      {/* 4) QUICK ACCESS */}
       <div>
         <p className="text-[10px] font-semibold text-[var(--text-secondary)] uppercase tracking-widest mb-3">
           Quick Access
         </p>
-        <div className="grid grid-cols-4 gap-3">
+        <MotionStagger className="grid grid-cols-4 gap-3">
           {QUICK_ACCESS.map((item) => {
             const Icon = item.icon;
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="card-premium flex flex-col items-center gap-2.5 py-4 group hover:border-tumba-500/25 hover:shadow-[0_0_15px_rgba(192,38,211,0.06)] active:scale-[0.97] transition-all"
-              >
-                <div className="h-10 w-10 rounded-xl bg-tumba-500/10 flex items-center justify-center group-hover:bg-tumba-500/20 group-hover:shadow-[0_0_12px_rgba(192,38,211,0.1)] transition-all">
-                  <Icon size={20} strokeWidth={1.75} className="text-tumba-400" />
-                </div>
-                <span className="text-[11px] font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors leading-tight text-center">
-                  {item.label}
-                </span>
-              </Link>
+              <MotionItem key={item.href}>
+                <Link
+                  href={item.href}
+                  className="card-premium flex flex-col items-center gap-2.5 py-4 group hover:border-tumba-500/25 hover:shadow-[0_0_15px_rgba(192,38,211,0.06)] active:scale-[0.97] transition-all"
+                >
+                  <div className="h-10 w-10 rounded-xl bg-tumba-500/10 flex items-center justify-center group-hover:bg-tumba-500/20 group-hover:shadow-[0_0_12px_rgba(192,38,211,0.1)] transition-all">
+                    <Icon size={20} strokeWidth={1.75} className="text-tumba-400" />
+                  </div>
+                  <span className="text-[11px] font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors leading-tight text-center">
+                    {item.label}
+                  </span>
+                </Link>
+              </MotionItem>
             );
           })}
-        </div>
+        </MotionStagger>
       </div>
-    </div>
+    </MotionPage>
   );
 }

@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { ShopIcon, PackageIcon } from "@/lib/icons";
 import { CoinBadge, CoinAmountMd, CoinAmountSm } from "@/components/TumbaCoin";
+import { motion } from "framer-motion";
+import { MotionPage } from "@/components/motion";
+import { staggerContainer, fadeInUp } from "@/lib/animations";
 
 interface ShopItem {
   id: string;
@@ -187,7 +190,7 @@ export default function ShopPage() {
   const filteredItems = selectedCategory === "all" ? activeItems : activeItems.filter((i) => i.category === selectedCategory);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
+    <MotionPage className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
       {/* Toast */}
       {toast && (
         <div className={`fixed top-20 right-4 z-50 px-5 py-3 rounded-xl text-sm font-medium shadow-xl transition-all ${
@@ -384,9 +387,10 @@ export default function ShopPage() {
               {isAdmin && <p className="text-sm mt-1">Use the Manage button to add items.</p>}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredItems.map((item) => (
-                <div
+                <motion.div
+                  variants={fadeInUp}
                   key={item.id}
                   className="p-4 sm:p-5 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] transition-all flex flex-col"
                 >
@@ -426,12 +430,12 @@ export default function ShopPage() {
                       {buying === item.id ? "Buying..." : userCoins < item.price ? "Not enough TC" : "Buy"}
                     </button>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
         </>
       )}
-    </div>
+    </MotionPage>
   );
 }
