@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { TumbasIcon } from "@/lib/icons";
+import EmptyState from "@/components/EmptyState";
 import { CoinAmountMd } from "@/components/TumbaCoin";
 import { MotionPage } from "@/components/motion";
 
@@ -234,11 +235,11 @@ export default function TumbasPage() {
       </div>
 
       {users.length === 0 && (
-        <div className="text-center py-16 text-[var(--text-secondary)]">
-          <TumbasIcon size={48} strokeWidth={1.25} className="mb-4 text-[var(--text-secondary)]" />
-          <p className="text-lg">No Tumbas yet</p>
-          <p className="text-sm mt-1">Be the first to join!</p>
-        </div>
+        <EmptyState
+          icon={<TumbasIcon size={28} strokeWidth={1.5} className="text-tumba-400/60" />}
+          title="No Tumbas yet"
+          description="Be the first to join!"
+        />
       )}
     </MotionPage>
   );

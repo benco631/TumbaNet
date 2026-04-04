@@ -18,6 +18,7 @@ import {
   ShopIcon,
   AlbumIcon,
   AdminIcon,
+  AchievementsIcon,
 } from "@/lib/icons";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
@@ -29,11 +30,12 @@ const PRIMARY_TABS = [
 ];
 
 const MORE_ITEMS = [
-  { href: "/sikum",      label: "Highlights", icon: HighlightsIcon },
-  { href: "/dictionary", label: "Dictionary",  icon: DictionaryIcon },
-  { href: "/market",     label: "Market",      icon: MarketIcon     },
-  { href: "/shop",       label: "Shop",        icon: ShopIcon       },
-  { href: "/album",      label: "Album",       icon: AlbumIcon      },
+  { href: "/sikum",         label: "Highlights",   icon: HighlightsIcon   },
+  { href: "/dictionary",    label: "Dictionary",   icon: DictionaryIcon   },
+  { href: "/achievements",  label: "Achievements", icon: AchievementsIcon },
+  { href: "/market",        label: "Market",       icon: MarketIcon       },
+  { href: "/shop",          label: "Shop",         icon: ShopIcon         },
+  { href: "/album",         label: "Album",        icon: AlbumIcon        },
 ];
 
 export default function BottomNav() {
@@ -50,7 +52,7 @@ export default function BottomNav() {
 
   return (
     <>
-      <nav className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-[var(--bg-secondary)]/95 backdrop-blur-xl border-t border-[var(--border)] pb-safe">
+      <nav className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-[var(--bg-secondary)]/97 backdrop-blur-xl border-t border-[var(--border)] pb-safe">
         <div className="flex items-stretch h-16">
           {PRIMARY_TABS.map((tab) => {
             const isActive =
@@ -60,28 +62,53 @@ export default function BottomNav() {
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${
+                className={`flex-1 flex flex-col items-center justify-center gap-1 relative transition-colors ${
                   isActive ? "text-tumba-400" : "text-[var(--text-secondary)]"
                 }`}
               >
-                <motion.div whileTap={{ scale: 0.9 }} transition={{ duration: 0.15 }}>
-                  <Icon size={22} strokeWidth={isActive ? 2 : 1.75} />
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-pill"
+                    className="absolute inset-x-1 top-2 bottom-1.5 rounded-[14px] bg-tumba-500/12 border border-tumba-500/15 shadow-[0_0_12px_rgba(192,38,211,0.08)]"
+                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                  />
+                )}
+                <motion.div
+                  className="relative z-10"
+                  whileTap={{ scale: 0.88 }}
+                  transition={{ duration: 0.13 }}
+                >
+                  <Icon
+                    size={isActive ? 23 : 21}
+                    strokeWidth={isActive ? 2.1 : 1.75}
+                  />
                 </motion.div>
-                <span className="text-[10px] font-medium">{tab.label}</span>
+                <span className={`text-[10px] relative z-10 transition-all ${isActive ? "font-semibold" : "font-medium"}`}>
+                  {tab.label}
+                </span>
               </Link>
             );
           })}
 
           <button
             onClick={() => setSheetOpen(true)}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${
+            className={`flex-1 flex flex-col items-center justify-center gap-1 relative transition-colors ${
               isMoreActive ? "text-tumba-400" : "text-[var(--text-secondary)]"
             }`}
           >
-            <motion.div whileTap={{ scale: 0.9 }} transition={{ duration: 0.15 }}>
-              <MoreHorizontal size={22} strokeWidth={1.75} />
+            {isMoreActive && (
+              <motion.div
+                layoutId="nav-pill"
+                className="absolute inset-x-1 top-2 bottom-1.5 rounded-[14px] bg-tumba-500/12 border border-tumba-500/15 shadow-[0_0_12px_rgba(192,38,211,0.08)]"
+                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              />
+            )}
+            <motion.div className="relative z-10" whileTap={{ scale: 0.88 }} transition={{ duration: 0.13 }}>
+              <MoreHorizontal size={isMoreActive ? 23 : 21} strokeWidth={isMoreActive ? 2.1 : 1.75} />
             </motion.div>
-            <span className="text-[10px] font-medium">More</span>
+            <span className={`text-[10px] relative z-10 ${isMoreActive ? "font-semibold" : "font-medium"}`}>
+              More
+            </span>
           </button>
         </div>
       </nav>
@@ -132,20 +159,36 @@ export default function BottomNav() {
                   );
                 })}
                 {isAdmin && (
-                  <motion.div variants={fadeInUp}>
-                    <Link
-                      href="/admin/highlights"
-                      onClick={() => setSheetOpen(false)}
-                      className={`flex flex-col items-center gap-2 py-4 rounded-2xl transition-colors ${
-                        pathname.startsWith("/admin")
-                          ? "bg-tumba-500/15 text-tumba-400"
-                          : "bg-[var(--bg-card)] text-[var(--text-secondary)]"
-                      }`}
-                    >
-                      <AdminIcon size={22} strokeWidth={1.75} />
-                      <span className="text-xs font-medium">Admin</span>
-                    </Link>
-                  </motion.div>
+                  <>
+                    <motion.div variants={fadeInUp}>
+                      <Link
+                        href="/admin/highlights"
+                        onClick={() => setSheetOpen(false)}
+                        className={`flex flex-col items-center gap-2 py-4 rounded-2xl transition-colors ${
+                          pathname.startsWith("/admin/highlights")
+                            ? "bg-tumba-500/15 text-tumba-400"
+                            : "bg-[var(--bg-card)] text-[var(--text-secondary)]"
+                        }`}
+                      >
+                        <AdminIcon size={22} strokeWidth={1.75} />
+                        <span className="text-xs font-medium">Admin</span>
+                      </Link>
+                    </motion.div>
+                    <motion.div variants={fadeInUp}>
+                      <Link
+                        href="/admin/achievements"
+                        onClick={() => setSheetOpen(false)}
+                        className={`flex flex-col items-center gap-2 py-4 rounded-2xl transition-colors ${
+                          pathname.startsWith("/admin/achievements")
+                            ? "bg-tumba-500/15 text-tumba-400"
+                            : "bg-[var(--bg-card)] text-[var(--text-secondary)]"
+                        }`}
+                      >
+                        <AchievementsIcon size={22} strokeWidth={1.75} />
+                        <span className="text-xs font-medium">Awards</span>
+                      </Link>
+                    </motion.div>
+                  </>
                 )}
               </motion.div>
 

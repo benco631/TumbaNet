@@ -15,7 +15,9 @@ import {
   MaybeIcon,
   NotGoingIcon,
   LocationIcon,
+  EventsIcon,
 } from "@/lib/icons";
+import EmptyState from "@/components/EmptyState";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 
@@ -483,9 +485,12 @@ export default function EventsPage() {
             </h2>
 
             {upcomingEvents.length === 0 ? (
-              <p className="text-sm text-[var(--text-secondary)] text-center py-8">
-                No upcoming events. Create one!
-              </p>
+              <EmptyState
+                icon={<EventsIcon size={26} strokeWidth={1.5} className="text-tumba-400/60" />}
+                title="No upcoming events"
+                description="Create one to get the Tumbas together."
+                className="py-8"
+              />
             ) : (
               <div className="space-y-4">
                 {upcomingEvents.map((event) => (

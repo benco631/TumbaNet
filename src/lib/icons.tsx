@@ -47,6 +47,7 @@ export {
   Trophy       as TrophyIcon,
   Crown        as CrownIcon,
   Medal        as MedalIcon,
+  Award        as AchievementsIcon,
   Flame        as FlameIcon,
   Star         as StarIcon,
 

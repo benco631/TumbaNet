@@ -18,21 +18,24 @@ import {
   AlbumIcon,
   AdminIcon,
   TrophyIcon,
+  AchievementsIcon,
 } from "@/lib/icons";
 
 const tabs: { name: string; href: string; icon: LucideIcon; shortName: string }[] = [
-  { name: "Highlights",   href: "/sikum",        icon: HighlightsIcon, shortName: "Highlights"  },
-  { name: "The Tumbas",   href: "/tumbas",       icon: TumbasIcon,     shortName: "Tumbas"      },
-  { name: "Dictionary",   href: "/dictionary",   icon: DictionaryIcon, shortName: "Dictionary"  },
-  { name: "Events",       href: "/events",       icon: EventsIcon,     shortName: "Events"      },
-  { name: "Leaderboard",  href: "/leaderboard",  icon: TrophyIcon,     shortName: "Leaderboard" },
-  { name: "Market",       href: "/market",       icon: MarketIcon,     shortName: "Market"      },
-  { name: "Shop",         href: "/shop",         icon: ShopIcon,       shortName: "Shop"        },
-  { name: "Album",        href: "/album",        icon: AlbumIcon,      shortName: "Album"       },
+  { name: "Highlights",    href: "/sikum",         icon: HighlightsIcon,   shortName: "Highlights"   },
+  { name: "The Tumbas",    href: "/tumbas",        icon: TumbasIcon,       shortName: "Tumbas"       },
+  { name: "Dictionary",    href: "/dictionary",    icon: DictionaryIcon,   shortName: "Dictionary"   },
+  { name: "Events",        href: "/events",        icon: EventsIcon,       shortName: "Events"       },
+  { name: "Leaderboard",   href: "/leaderboard",   icon: TrophyIcon,       shortName: "Leaderboard"  },
+  { name: "Achievements",  href: "/achievements",  icon: AchievementsIcon, shortName: "Achievements" },
+  { name: "Market",        href: "/market",        icon: MarketIcon,       shortName: "Market"       },
+  { name: "Shop",          href: "/shop",          icon: ShopIcon,         shortName: "Shop"         },
+  { name: "Album",         href: "/album",         icon: AlbumIcon,        shortName: "Album"        },
 ];
 
 const adminTabs = [
-  { name: "Admin", href: "/admin/highlights", icon: AdminIcon, shortName: "Admin" },
+  { name: "Admin",              href: "/admin/highlights",    icon: AdminIcon,        shortName: "Admin"     },
+  { name: "Admin Achievements", href: "/admin/achievements",  icon: AchievementsIcon, shortName: "Awards"    },
 ];
 
 export default function Navbar() {

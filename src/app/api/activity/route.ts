@@ -39,22 +39,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { userId, type, note } = await req.json();
+  const {
+    userId,
+    type,
+    note,
+    // CAR fields
+    passengerCount,
+    distanceKm,
+    // HOST fields
+    attendeeCount,
+    shortNotice,
+  } = await req.json();
 
   if (!userId || !type) {
     return NextResponse.json({ error: "Missing userId or type" }, { status: 400 });
   }
 
   const validTypes = ["HOST", "CAR"];
-  if (!validTypes.includes(type.toUpperCase())) {
+  const typeUpper = type.toUpperCase();
+  if (!validTypes.includes(typeUpper)) {
     return NextResponse.json({ error: "Invalid type. Use HOST or CAR" }, { status: 400 });
   }
 
   const log = await prisma.activityLog.create({
     data: {
       userId,
-      type: type.toUpperCase(),
+      type: typeUpper,
       note: note?.trim() || null,
+      // CAR extras
+      passengerCount: typeUpper === "CAR" && passengerCount != null ? parseInt(passengerCount) || null : null,
+      distanceKm:     typeUpper === "CAR" && distanceKm     != null ? parseFloat(distanceKm)  || null : null,
+      // HOST extras
+      attendeeCount: typeUpper === "HOST" && attendeeCount != null ? parseInt(attendeeCount) || null : null,
+      shortNotice:   typeUpper === "HOST" ? Boolean(shortNotice) : false,
     },
     include: { user: { select: { id: true, name: true } } },
   });

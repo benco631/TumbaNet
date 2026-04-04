@@ -43,15 +43,21 @@ export function CoinAmountMd({ amount, className = "", showLabel = false }: Coin
   );
 }
 
-/** Large — for wallet / balance / hero display (icon 38px) */
+/** Large — for wallet / balance / hero display (icon 48px, with glow animation) */
 export function CoinAmountLg({ amount, className = "", showLabel = true }: CoinAmountProps) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <TumbaCoinIcon size={48} />
+      <span className="animate-coin-glow shrink-0">
+        <TumbaCoinIcon size={48} />
+      </span>
       <span className="text-2xl font-extrabold text-tumba-300 tabular-nums">
         {formatNumber(amount)}
       </span>
-      {showLabel && <span className="text-sm text-[var(--text-secondary)] font-medium">TC</span>}
+      {showLabel && (
+        <span className="text-xs text-tumba-500/70 font-bold uppercase tracking-widest leading-none mt-1 self-end mb-0.5">
+          TC
+        </span>
+      )}
     </span>
   );
 }
@@ -117,27 +123,28 @@ interface BalanceCardProps {
 export function BalanceCard({ balance, totalSpent, className = "" }: BalanceCardProps) {
   return (
     <div
-      className={`relative overflow-hidden p-5 rounded-2xl border border-tumba-500/25
-        bg-gradient-to-br from-tumba-900/60 via-[var(--bg-card)] to-[var(--bg-card)]
-        shadow-[0_0_30px_rgba(192,38,211,0.06)]
+      className={`relative overflow-hidden p-5 rounded-2xl border border-tumba-500/28
+        bg-gradient-to-br from-tumba-900/65 via-[var(--bg-card)] to-[var(--bg-card)]
+        animate-neon-pulse
         ${className}`}
     >
-      {/* Decorative glow */}
-      <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-tumba-500/8 blur-2xl pointer-events-none" />
+      {/* Decorative glows */}
+      <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-tumba-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-neon-pink/[0.05] blur-2xl pointer-events-none" />
 
-      <p className="text-[11px] uppercase tracking-wider text-[var(--text-secondary)] font-semibold mb-2">
-        Balance
+      <p className="section-label mb-2.5 relative z-10">
+        TumbaCoins Balance
       </p>
-      <CoinAmountLg amount={balance} />
+      <CoinAmountLg amount={balance} className="relative z-10" />
 
       {totalSpent !== undefined && (
-        <div className="flex gap-4 mt-4 pt-3 border-t border-[var(--border)]">
+        <div className="flex gap-6 mt-4 pt-3.5 border-t border-tumba-500/15 relative z-10">
           <div>
-            <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider mb-0.5">Spent</p>
+            <p className="section-label mb-1">Spent</p>
             <CoinAmountSm amount={totalSpent} />
           </div>
           <div>
-            <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider mb-0.5">Lifetime</p>
+            <p className="section-label mb-1">Lifetime</p>
             <CoinAmountSm amount={balance + totalSpent} />
           </div>
         </div>

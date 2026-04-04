@@ -8,36 +8,37 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(cuid())
-  name       String
-  email      String   @unique
-  password   String
-  avatar     String?
-  bio        String?
-  nickname   String?
-  tag        String?
-  tumbaCoins Int      @default(100)
-  status     String   @default("")
-  isAdmin    Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  firebaseUid String? @unique
-  
-  entries              Entry[]
-  dictionaryEntries    DictionaryEntry[]
-  dictionaryComments   DictionaryComment[]
-  dictionaryRatings    DictionaryRating[]
-  events               Event[]
-  eventPollVotes       EventPollVote[]
-  eventRsvps           EventRsvp[]
-  betsCreated          Bet[]
-  wagers               Wager[]
-  media                Media[]
-  albums               Album[]
-  purchases            Purchase[]
-  activityLogs         ActivityLog[]
-  notificationsReceived Notification[] @relation("notificationsReceived")
-  notificationsSent     Notification[] @relation("notificationsSent")
-  
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  password    String
+  avatar      String?
+  bio         String?
+  nickname    String?
+  tag         String?
+  tumbaCoins  Int      @default(100)
+  status      String   @default("")
+  isAdmin     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  firebaseUid String?  @unique
+
+  entries               Entry[]
+  dictionaryEntries     DictionaryEntry[]
+  dictionaryComments    DictionaryComment[]
+  dictionaryRatings     DictionaryRating[]
+  events                Event[]
+  eventPollVotes        EventPollVote[]
+  eventRsvps            EventRsvp[]
+  betsCreated           Bet[]
+  wagers                Wager[]
+  media                 Media[]
+  albums                Album[]
+  purchases             Purchase[]
+  activityLogs          ActivityLog[]
+  notificationsReceived Notification[]      @relation("notificationsReceived")
+  notificationsSent     Notification[]      @relation("notificationsSent")
+  monthlyAchievements   MonthlyAchievement[]
+  coinTransactions      CoinTransaction[]
 }
 
 model Entry {
@@ -267,13 +268,54 @@ model Notification {
 // === ACTIVITY LOG (hosting / car / etc.) ===
 
 model ActivityLog {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  type      String   // HOST, CAR
-  note      String?
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  type           String   // HOST, CAR
+  note           String?
+  // CAR fields
+  passengerCount Int?     // number of passengers carried
+  distanceKm     Float?   // distance driven in km
+  // HOST fields
+  attendeeCount  Int?     // number of attendees at the event
+  shortNotice    Boolean  @default(false) // was this short-notice hosting?
+  createdAt      DateTime @default(now())
 
   @@index([type])
   @@index([userId])
+  @@index([createdAt])
+}
+
+// === MONTHLY ACHIEVEMENTS ===
+
+/// One record per user per achievement per month. Unique constraint prevents duplicate rewards.
+model MonthlyAchievement {
+  id             String   @id @default(cuid())
+  achievementKey String
+  month          Int      // 1-12
+  year           Int
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  rewardCoins    Int
+  metricValue    Float?   // numeric value that determined the winner
+  metricLabel    String?  // human-readable description of metricValue
+  createdAt      DateTime @default(now())
+
+  @@unique([achievementKey, month, year, userId])
+  @@index([month, year])
+  @@index([userId])
+}
+
+// === COIN TRANSACTIONS ===
+
+/// Audit log for all TumbaCoin credits (achievement rewards, etc.)
+model CoinTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Int      // positive = credit, negative = debit
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
