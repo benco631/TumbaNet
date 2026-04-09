@@ -35,10 +35,13 @@ model User {
   albums                Album[]
   purchases             Purchase[]
   activityLogs          ActivityLog[]
-  notificationsReceived Notification[]      @relation("notificationsReceived")
-  notificationsSent     Notification[]      @relation("notificationsSent")
+  notificationsReceived Notification[]       @relation("notificationsReceived")
+  notificationsSent     Notification[]       @relation("notificationsSent")
   monthlyAchievements   MonthlyAchievement[]
   coinTransactions      CoinTransaction[]
+  shopItemsCreated      ShopItem[]           @relation("ShopItemsCreated")
+  shopSuggestions       ShopSuggestion[]
+  shopSuggestionVotes   ShopSuggestionVote[]
 }
 
 model Entry {
@@ -84,22 +87,22 @@ model DictionaryEntry {
 }
 
 model DictionaryComment {
-  id               String          @id @default(cuid())
-  content          String
-  userId           String
-  user             User            @relation(fields: [userId], references: [id])
+  id                String          @id @default(cuid())
+  content           String
+  userId            String
+  user              User            @relation(fields: [userId], references: [id])
   dictionaryEntryId String
-  dictionaryEntry  DictionaryEntry @relation(fields: [dictionaryEntryId], references: [id], onDelete: Cascade)
-  createdAt        DateTime        @default(now())
+  dictionaryEntry   DictionaryEntry @relation(fields: [dictionaryEntryId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now())
 }
 
 model DictionaryRating {
-  id               String          @id @default(cuid())
-  value            Int
-  userId           String
-  user             User            @relation(fields: [userId], references: [id])
+  id                String          @id @default(cuid())
+  value             Int
+  userId            String
+  user              User            @relation(fields: [userId], references: [id])
   dictionaryEntryId String
-  dictionaryEntry  DictionaryEntry @relation(fields: [dictionaryEntryId], references: [id], onDelete: Cascade)
+  dictionaryEntry   DictionaryEntry @relation(fields: [dictionaryEntryId], references: [id], onDelete: Cascade)
 
   @@unique([userId, dictionaryEntryId])
 }
@@ -140,7 +143,7 @@ model EventPoll {
 }
 
 model EventPollOption {
-  id     String @id @default(cuid())
+  id     String    @id @default(cuid())
   text   String
   pollId String
   poll   EventPoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
@@ -149,9 +152,9 @@ model EventPollOption {
 }
 
 model EventPollVote {
-  id       String @id @default(cuid())
+  id       String          @id @default(cuid())
   userId   String
-  user     User   @relation(fields: [userId], references: [id])
+  user     User            @relation(fields: [userId], references: [id])
   optionId String
   option   EventPollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
 
@@ -161,15 +164,15 @@ model EventPollVote {
 // === TUMBA MARKET (Betting) ===
 
 model Bet {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  closingDate DateTime
-  status      String   @default("OPEN") // OPEN, CLOSED, RESOLVED
+  id               String   @id @default(cuid())
+  title            String
+  description      String
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  closingDate      DateTime
+  status           String   @default("OPEN") // OPEN, CLOSED, RESOLVED
   resolvedOptionId String?
-  createdAt   DateTime @default(now())
+  createdAt        DateTime @default(now())
 
   options BetOption[]
 }
@@ -234,7 +237,53 @@ model ShopItem {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Provenance: ADMIN = created via admin panel, BUILT_IN = seeded, COMMUNITY = promoted from an approved suggestion
+  source       String  @default("ADMIN")
+  builtInKey   String? @unique
+  createdById  String?
+  createdBy    User?   @relation("ShopItemsCreated", fields: [createdById], references: [id])
+  suggestionId String? @unique
+  suggestion   ShopSuggestion? @relation("ApprovedShopItem", fields: [suggestionId], references: [id])
+
   purchases Purchase[]
+}
+
+/// Community-suggested shop item awaiting group approval via thumbs up/down votes.
+model ShopSuggestion {
+  id             String   @id @default(cuid())
+  title          String
+  description    String
+  price          Int
+  category       String   @default("general")
+  imageUrl       String?
+  status         String   @default("PENDING") // PENDING, APPROVED, REJECTED, EXPIRED
+  creatorId      String
+  creator        User     @relation(fields: [creatorId], references: [id])
+  expiresAt      DateTime
+  resolvedAt     DateTime?
+  resolutionNote String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  votes        ShopSuggestionVote[]
+  approvedItem ShopItem?            @relation("ApprovedShopItem")
+
+  @@index([status])
+  @@index([creatorId])
+  @@index([expiresAt])
+}
+
+model ShopSuggestionVote {
+  id           String         @id @default(cuid())
+  suggestionId String
+  suggestion   ShopSuggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User           @relation(fields: [userId], references: [id])
+  value        Int // +1 for upvote, -1 for downvote
+  createdAt    DateTime       @default(now())
+
+  @@unique([suggestionId, userId])
+  @@index([suggestionId])
 }
 
 model Purchase {
@@ -243,7 +292,7 @@ model Purchase {
   user       User     @relation(fields: [userId], references: [id])
   shopItemId String
   shopItem   ShopItem @relation(fields: [shopItemId], references: [id])
-  price      Int      // price at time of purchase
+  price      Int // price at time of purchase
   createdAt  DateTime @default(now())
 }
 
@@ -255,7 +304,7 @@ model Notification {
   recipient   User     @relation("notificationsReceived", fields: [recipientId], references: [id], onDelete: Cascade)
   actorId     String
   actor       User     @relation("notificationsSent", fields: [actorId], references: [id], onDelete: Cascade)
-  type        String   // BET, EVENT, HIGHLIGHT
+  type        String // BET, EVENT, HIGHLIGHT
   message     String
   targetUrl   String?
   isRead      Boolean  @default(false)
@@ -271,13 +320,13 @@ model ActivityLog {
   id             String   @id @default(cuid())
   userId         String
   user           User     @relation(fields: [userId], references: [id])
-  type           String   // HOST, CAR
+  type           String // HOST, CAR
   note           String?
   // CAR fields
-  passengerCount Int?     // number of passengers carried
-  distanceKm     Float?   // distance driven in km
+  passengerCount Int? // number of passengers carried
+  distanceKm     Float? // distance driven in km
   // HOST fields
-  attendeeCount  Int?     // number of attendees at the event
+  attendeeCount  Int? // number of attendees at the event
   shortNotice    Boolean  @default(false) // was this short-notice hosting?
   createdAt      DateTime @default(now())
 
@@ -292,13 +341,13 @@ model ActivityLog {
 model MonthlyAchievement {
   id             String   @id @default(cuid())
   achievementKey String
-  month          Int      // 1-12
+  month          Int // 1-12
   year           Int
   userId         String
   user           User     @relation(fields: [userId], references: [id])
   rewardCoins    Int
-  metricValue    Float?   // numeric value that determined the winner
-  metricLabel    String?  // human-readable description of metricValue
+  metricValue    Float? // numeric value that determined the winner
+  metricLabel    String? // human-readable description of metricValue
   createdAt      DateTime @default(now())
 
   @@unique([achievementKey, month, year, userId])
@@ -313,7 +362,7 @@ model CoinTransaction {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  amount    Int      // positive = credit, negative = debit
+  amount    Int // positive = credit, negative = debit
   reason    String
   createdAt DateTime @default(now())
 
