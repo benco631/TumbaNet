@@ -16,6 +16,7 @@ export async function GET() {
       id: true,
       name: true,
       tumbaCoins: true,
+      avatar: true,
       status: true,
       createdAt: true,
     },

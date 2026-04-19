@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { MotionPage } from "@/components/motion";
 import { staggerContainer, fadeInUp } from "@/lib/animations";
+import PostCard from "@/components/PostCard";
 
 interface MediaItem {
   id: string;
@@ -14,8 +15,11 @@ interface MediaItem {
   caption: string | null;
   type: string;
   createdAt: string;
-  user: { id: string; name: string };
+  user: { id: string; name: string; avatar?: string | null };
   album: { id: string; name: string } | null;
+  // שדות חברתיים שנוסיף ל-API בהמשך
+  _count?: { likes: number; comments: number };
+  likes?: { userId: string }[];
 }
 
 interface Album {
@@ -34,7 +38,7 @@ export default function AlbumPage() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"gallery" | "albums">("gallery");
+  const [viewMode, setViewMode] = useState<"feed" | "gallery" | "albums">("feed");
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<MediaItem | null>(null);
 
@@ -178,7 +182,7 @@ export default function AlbumPage() {
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <AlbumIcon size={32} strokeWidth={1.75} className="text-tumba-400 shrink-0" />
             <span className="bg-gradient-to-r from-tumba-300 to-tumba-500 bg-clip-text text-transparent">
-              Tumba Album
+              Tumba Feed
             </span>
           </h1>
           <p className="text-[var(--text-secondary)] mt-1">
@@ -190,13 +194,23 @@ export default function AlbumPage() {
             onClick={() => setShowUpload(!showUpload)}
             className="px-5 py-2.5 rounded-xl bg-tumba-500 text-white font-semibold hover:bg-tumba-400 transition-all shadow-lg shadow-tumba-500/20"
           >
-            {showUpload ? "Cancel" : "+ Upload"}
+            {showUpload ? "Cancel" : "+ New Post"}
           </button>
         </div>
       </div>
 
       {/* View Toggle */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
+        <button
+          onClick={() => { setViewMode("feed"); setSelectedAlbum(null); fetchMedia(); }}
+          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+            viewMode === "feed" && !selectedAlbum
+              ? "bg-tumba-500 text-white shadow-lg shadow-tumba-500/25"
+              : "bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)]"
+          }`}
+        >
+          Feed
+        </button>
         <button
           onClick={() => { setViewMode("gallery"); setSelectedAlbum(null); fetchMedia(); }}
           className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
@@ -205,7 +219,7 @@ export default function AlbumPage() {
               : "bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)]"
           }`}
         >
-          All Media
+          Gallery
         </button>
         <button
           onClick={() => setViewMode("albums")}
@@ -218,14 +232,16 @@ export default function AlbumPage() {
           Albums ({albums.length})
         </button>
         {selectedAlbum && (
-          <span className="px-4 py-2 rounded-xl text-sm font-medium bg-tumba-500/10 text-tumba-400 border border-tumba-500/20">
+          <span className="px-4 py-2 rounded-xl text-sm font-medium bg-tumba-500/10 text-tumba-400 border border-tumba-500/20 flex items-center">
             {albums.find((a) => a.id === selectedAlbum)?.name}
-            <button onClick={() => { setSelectedAlbum(null); fetchMedia(); }} className="ml-2 text-tumba-400 hover:text-tumba-300"><CloseIcon size={14} /></button>
+            <button onClick={() => { setSelectedAlbum(null); fetchMedia(); }} className="ml-2 text-tumba-400 hover:text-tumba-300">
+              <CloseIcon size={14} />
+            </button>
           </span>
         )}
       </div>
 
-      {/* Upload Form */}
+      {/* Upload Form (Remains exactly the same) */}
       {showUpload && (
         <div
           className={`mb-8 p-5 rounded-2xl border transition-all ${
@@ -258,7 +274,7 @@ export default function AlbumPage() {
                 className="border-2 border-dashed border-[var(--border)] rounded-xl p-8 text-center cursor-pointer hover:border-tumba-500/50 transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <UploadIcon size={36} strokeWidth={1.5} className="mb-2 text-[var(--text-secondary)]" />
+                <UploadIcon size={36} strokeWidth={1.5} className="mb-2 text-[var(--text-secondary)] mx-auto" />
                 <p className="text-sm text-[var(--text-secondary)]">
                   {dragOver ? "Drop files here!" : "Click or drag & drop files here"}
                 </p>
@@ -321,7 +337,45 @@ export default function AlbumPage() {
         </div>
       )}
 
-      {/* Albums View */}
+      {/* ── NEW: Feed View ── */}
+      {viewMode === "feed" && (
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          className="max-w-xl mx-auto flex flex-col pt-2"
+        >
+          {media.length === 0 ? (
+            <div className="text-center py-16 text-[var(--text-secondary)]">
+              <AlbumIcon size={48} strokeWidth={1.25} className="mb-4 text-[var(--text-secondary)] mx-auto" />
+              <p className="text-lg">No posts yet</p>
+            </div>
+          ) : (
+            media.map((item) => (
+              <PostCard 
+                key={item.id} 
+                post={{
+                  id: item.id,
+                  user: { 
+                    name: item.user.name, 
+                    avatar: item.user.avatar || null 
+                  },
+                  url: item.url,
+                  caption: item.caption || "",
+                  likesCount: item._count?.likes || 0,
+                  commentsCount: item._count?.comments || 0,
+                  isLikedByMe: item.likes?.some(l => l.userId === userId) || false,
+                  createdAt: new Date(item.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+                }}
+                // שני הפרופס החדשים שלנו:
+                isMine={item.user.id === userId || isAdmin} 
+                onDeleted={() => fetchMedia()} 
+              />
+            ))
+          )}
+        </motion.div>
+      )}
+
+      {/* Albums View (Remains exactly the same) */}
       {viewMode === "albums" && !selectedAlbum && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -397,7 +451,7 @@ export default function AlbumPage() {
             ))}
             {albums.length === 0 && (
               <div className="col-span-full text-center py-12 text-[var(--text-secondary)]">
-                <LibraryIcon size={36} strokeWidth={1.5} className="mb-2 text-[var(--text-secondary)]" />
+                <LibraryIcon size={36} strokeWidth={1.5} className="mb-2 text-[var(--text-secondary)] mx-auto" />
                 <p>No albums yet. Create one to organize your media!</p>
               </div>
             )}
@@ -405,12 +459,12 @@ export default function AlbumPage() {
         </div>
       )}
 
-      {/* Gallery Grid */}
+      {/* Gallery Grid (Remains exactly the same) */}
       {(viewMode === "gallery" || selectedAlbum) && (
         <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {media.length === 0 ? (
             <div className="col-span-full text-center py-16 text-[var(--text-secondary)]">
-              <AlbumIcon size={48} strokeWidth={1.25} className="mb-4 text-[var(--text-secondary)]" />
+              <AlbumIcon size={48} strokeWidth={1.25} className="mb-4 text-[var(--text-secondary)] mx-auto" />
               <p className="text-lg">No media yet</p>
               <p className="text-sm mt-1">Upload photos and videos to start building the memories vault!</p>
             </div>
@@ -451,7 +505,7 @@ export default function AlbumPage() {
         </motion.div>
       )}
 
-      {/* Lightbox */}
+      {/* Lightbox (Remains exactly the same) */}
       {lightbox && (
         <div
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"

@@ -13,6 +13,7 @@ import {
 import { MotionPage } from "@/components/motion";
 import { staggerContainer, fadeInUp } from "@/lib/animations";
 import EmptyState from "@/components/EmptyState";
+import UserAvatar from "@/components/UserAvatar";
 
 interface LeaderboardEntry {
   userId: string;
@@ -158,15 +159,13 @@ export default function LeaderboardPage() {
                     )}
 
                     {/* Avatar */}
-                    <div
-                      className={`rounded-full flex items-center justify-center font-bold text-white mt-2 mb-2 ${style.ring}
-                        ${isFirst
-                          ? "w-16 h-16 text-xl bg-gradient-to-br from-tumba-400 to-neon-pink"
-                          : "w-14 h-14 text-lg bg-gradient-to-br from-[var(--bg-card-hover)] to-[var(--border)]"
-                        }`}
-                    >
-                      {entry.name[0]?.toUpperCase()}
-                    </div>
+<UserAvatar 
+  name={entry.name}
+  avatarUrl={entry.avatar}
+  className={`mt-2 mb-2 ${style.ring} ${
+    isFirst ? "w-16 h-16 text-xl" : "w-14 h-14 text-lg"
+  }`}
+/>
 
                     {/* Name */}
                     <p className={`text-sm font-bold truncate max-w-full ${isMe ? "text-tumba-300" : ""}`}>
@@ -235,9 +234,11 @@ export default function LeaderboardPage() {
                     </div>
 
                     {/* Avatar */}
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[var(--bg-card-hover)] to-[var(--border)] flex items-center justify-center text-sm font-bold text-white shrink-0">
-                      {entry.name[0]?.toUpperCase()}
-                    </div>
+<UserAvatar 
+  name={entry.name}
+  avatarUrl={entry.avatar}
+  className="h-9 w-9 text-sm"
+/>
 
                     {/* Info + bar */}
                     <div className="flex-1 min-w-0">

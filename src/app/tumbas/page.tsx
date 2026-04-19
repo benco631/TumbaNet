@@ -8,11 +8,13 @@ import { TumbasIcon } from "@/lib/icons";
 import EmptyState from "@/components/EmptyState";
 import { CoinAmountMd } from "@/components/TumbaCoin";
 import { MotionPage } from "@/components/motion";
+import UserAvatar from "@/components/UserAvatar";
 
 interface TumbaUser {
   id: string;
   name: string;
   tumbaCoins: number;
+  avatar: string | null;
   status: string;
   createdAt: string;
 }
@@ -119,9 +121,7 @@ export default function TumbasPage() {
                 </div>
 
                 {/* Avatar */}
-                <div className="h-11 w-11 rounded-full bg-gradient-to-br from-tumba-400 to-neon-pink flex items-center justify-center text-lg font-bold text-white shrink-0">
-                  {user.name[0]?.toUpperCase()}
-                </div>
+<UserAvatar name={user.name} avatarUrl={user.avatar} className="h-11 w-11 text-lg" />
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">

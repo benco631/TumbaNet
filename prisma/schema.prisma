@@ -42,6 +42,14 @@ model User {
   shopItemsCreated      ShopItem[]           @relation("ShopItemsCreated")
   shopSuggestions       ShopSuggestion[]
   shopSuggestionVotes   ShopSuggestionVote[]
+
+  
+
+  // --- New Social Relations ---
+  stories           Story[]
+  storyViews        StoryView[]
+  mediaLikes        MediaLike[]
+  mediaComments     MediaComment[]
 }
 
 model Entry {
@@ -199,7 +207,7 @@ model Wager {
   @@unique([userId, betOptionId])
 }
 
-// === SHARED ALBUM ===
+// === SHARED ALBUM (Posts) ===
 
 model Album {
   id          String   @id @default(cuid())
@@ -221,6 +229,29 @@ model Media {
   user      User     @relation(fields: [userId], references: [id])
   albumId   String?
   album     Album?   @relation(fields: [albumId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  likes     MediaLike[]
+  comments  MediaComment[]
+}
+
+model MediaLike {
+  id        String   @id @default(cuid())
+  mediaId   String
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([mediaId, userId]) // אי אפשר לעשות לייק פעמיים לאותה תמונה!
+}
+
+model MediaComment {
+  id        String   @id @default(cuid())
+  content   String
+  mediaId   String
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
 }
 
@@ -367,4 +398,33 @@ model CoinTransaction {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+// === STORIES (24h Ephemeral) ===
+
+model Story {
+  id        String   @id @default(cuid())
+  url       String   // הקישור לתמונה או לוידאו מ-Firebase
+  type      String   @default("image") // image, video
+  caption   String?  // אופציונלי: טקסט על הסטורי
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  expiresAt DateTime // התאריך שבו הסטורי נעלם (בדרך כלל עכשיו + 24 שעות)
+
+  views     StoryView[]
+
+  @@index([expiresAt]) // אינדקס סופר חשוב לשליפה מהירה של סטוריז פעילים
+  @@index([userId])
+}
+
+model StoryView {
+  id        String   @id @default(cuid())
+  storyId   String
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([storyId, userId]) // מבטיח שמשתמש נספר רק פעם אחת בצפיות של סטורי ספציפי
 }

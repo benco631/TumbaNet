@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk } from "next/font/google";
-import "./globals.css";
+import "@/app/globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";

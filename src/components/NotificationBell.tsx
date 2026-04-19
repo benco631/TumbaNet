@@ -163,8 +163,7 @@ export default function NotificationBell() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="absolute right-0 top-full mt-2 w-[340px] sm:w-[380px] max-h-[480px] bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden z-[100] flex flex-col"
-          >
+className="absolute right-[-10px] sm:right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-[380px] max-w-[340px] sm:max-w-none max-h-[480px] origin-top-right bg-[var(--bg-secondary)] border border-[var(--border)] rounded-2xl shadow-2xl shadow-black/40 overflow-hidden z-[100] flex flex-col"          >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
               <h3 className="text-sm font-semibold text-[var(--text-primary)]">

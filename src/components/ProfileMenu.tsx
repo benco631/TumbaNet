@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
+import { motion, AnimatePresence } from "framer-motion"; // <-- הוספנו את Framer Motion
 import TumbaCoinIcon from "@/components/TumbaCoinIcon";
 import {
   EditIcon,
@@ -358,9 +359,15 @@ export default function ProfileMenu({ size = "sm" }: ProfileMenuProps) {
   function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File is too large. Please select an image under 5 MB.");
+      e.target.value = "";
+      return;
+    }
+
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
-    // Reset input so the same file can be re-selected later
     e.target.value = "";
   }
 
@@ -476,73 +483,81 @@ export default function ProfileMenu({ size = "sm" }: ProfileMenuProps) {
     history:  "History",
   };
 
-  // ── Modal content ────────────────────────────────────────────────────────
+  // ── Modal content (with Framer Motion animations) ────────────────────────
 
   const modalContent = (
-    <>
-      {/* Backdrop — catches outside taps to close */}
-      <div
-        className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm"
-        onPointerDown={closeModal}
-      />
+    <AnimatePresence>
+      {modalTab && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm"
+            onClick={closeModal} // שינינו ל-onClick במקום onPointerDown
+          />
 
-      {/* Sheet — stop propagation so taps inside don't close the modal */}
-      <div
-        className="fixed bottom-0 inset-x-0 z-[9999] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[480px] lg:rounded-2xl rounded-t-3xl bg-[var(--bg-secondary)] border border-[var(--border)] max-h-[92dvh] flex flex-col shadow-2xl pb-safe"
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        {/* Drag handle (mobile only) */}
-        <div className="flex justify-center pt-3 pb-1 lg:hidden shrink-0">
-          <div className="w-10 h-1 bg-[var(--border)] rounded-full" />
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)] shrink-0">
-          <div className="flex items-center gap-3">
-            <Avatar src={profile?.avatar ?? null} name={displayName} size="sm" />
-            <div>
-              <p className="text-sm font-bold leading-tight">{displayName}</p>
-              {profile?.tag && (
-                <p className="text-[11px] text-tumba-400 leading-tight">{profile.tag}</p>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={closeModal}
-            className="p-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)] transition-colors"
-            aria-label="Close"
+          {/* Sheet */}
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed bottom-0 inset-x-0 z-[9999] lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[480px] lg:rounded-2xl rounded-t-3xl bg-[var(--bg-secondary)] border border-[var(--border)] max-h-[92dvh] flex flex-col shadow-2xl pb-safe"
+            onClick={(e) => e.stopPropagation()}
           >
-            <CloseIcon size={16} />
-          </button>
-        </div>
+            {/* Drag handle (mobile only) */}
+            <div className="flex justify-center pt-3 pb-1 lg:hidden shrink-0">
+              <div className="w-10 h-1 bg-[var(--border)] rounded-full" />
+            </div>
 
-        {/* Tab bar */}
-        <div className="flex border-b border-[var(--border)] shrink-0">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => {
-                setModalTab(tab);
-                if (tab === "activity" && !activity) loadActivity();
-                if (tab === "stats"    && !stats)    loadStats();
-                if (tab === "history"  && !history)  loadHistory();
-              }}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors border-b-2 ${
-                modalTab === tab
-                  ? "border-tumba-500 text-tumba-400"
-                  : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              }`}
-            >
-              {TAB_ICONS[tab]}
-              {TAB_LABELS[tab]}
-            </button>
-          ))}
-        </div>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--border)] shrink-0">
+              <div className="flex items-center gap-3">
+                <Avatar src={profile?.avatar ?? null} name={displayName} size="sm" />
+                <div>
+                  <p className="text-sm font-bold leading-tight">{displayName}</p>
+                  {profile?.tag && (
+                    <p className="text-[11px] text-tumba-400 leading-tight">{profile.tag}</p>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={closeModal}
+                className="p-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)] transition-colors"
+                aria-label="Close"
+              >
+                <CloseIcon size={16} />
+              </button>
+            </div>
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto overscroll-contain">
+            {/* Tab bar */}
+            <div className="flex border-b border-[var(--border)] shrink-0">
+              {TABS.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => {
+                    setModalTab(tab);
+                    if (tab === "activity" && !activity) loadActivity();
+                    if (tab === "stats"    && !stats)    loadStats();
+                    if (tab === "history"  && !history)  loadHistory();
+                  }}
+                  className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium transition-colors border-b-2 ${
+                    modalTab === tab
+                      ? "border-tumba-500 text-tumba-400"
+                      : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  }`}
+                >
+                  {TAB_ICONS[tab]}
+                  {TAB_LABELS[tab]}
+                </button>
+              ))}
+            </div>
 
-          {/* ── EDIT PROFILE ── */}
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+               {/* ── EDIT PROFILE ── */}
           {modalTab === "edit" && (
             <div className="p-5 space-y-6">
 
@@ -612,7 +627,7 @@ export default function ProfileMenu({ size = "sm" }: ProfileMenuProps) {
                         ref={cameraInputRef}
                         type="file"
                         accept="image/*"
-                        capture="user"
+                        capture="environment"
                         className="hidden"
                         onChange={handleFileSelected}
                       />
@@ -896,74 +911,86 @@ export default function ProfileMenu({ size = "sm" }: ProfileMenuProps) {
               )}
             </div>
           )}
-        </div>
-      </div>
-    </>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 
   return (
     <>
-      {/* Transparent overlay behind dropdown — closes it on outside tap/click */}
-      {menuOpen && (
-        <div
-          className="fixed inset-0 z-[58]"
-          onPointerDown={() => setMenuOpen(false)}
-        />
-      )}
-
       {/* Avatar button + dropdown (positioned relative) */}
       <div className="relative">
         <button
-          onPointerDown={(e) => {
-            e.stopPropagation(); // don't let the transparent overlay catch this
+          onClick={(e) => {
+            e.stopPropagation();
             setMenuOpen((o) => !o);
           }}
-          className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-tumba-500"
+          className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-tumba-500 transition-transform active:scale-95"
           aria-label="Profile menu"
         >
           <Avatar src={avatarSrc} name={displayName} size={avatarSize} />
         </button>
 
-        {/* Dropdown card */}
-        {menuOpen && (
-          <div className="absolute top-11 right-0 z-[60] w-56 rounded-2xl border border-[var(--border)] bg-[var(--bg-secondary)] shadow-xl shadow-black/50 overflow-hidden">
-            {/* User header */}
-            <div className="px-4 py-3 border-b border-[var(--border)] flex items-center gap-3">
-              <Avatar src={profile?.avatar ?? null} name={displayName} size="sm" />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold truncate">{displayName}</p>
-                {profile?.tag && (
-                  <p className="text-[11px] text-tumba-400 truncate">{profile.tag}</p>
-                )}
-              </div>
-            </div>
+        {/* Dropdown menu with animations */}
+        <AnimatePresence>
+          {menuOpen && (
+            <>
+              {/* Overlay for dropdown */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[58]"
+                onClick={() => setMenuOpen(false)}
+              />
 
-            {/* Menu items */}
-            <div className="py-1">
-              {MENU_ITEMS.map((item) => (
-                <button
-                  key={item.tab}
-                  onPointerDown={(e) => {
-                    e.stopPropagation();
-                    openModal(item.tab);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-[var(--bg-card)] active:bg-[var(--bg-card-hover)] transition-colors group"
-                >
-                  <span className="text-tumba-400 shrink-0">{item.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[var(--text-primary)]">{item.label}</p>
-                    <p className="text-[11px] text-[var(--text-secondary)] truncate">{item.sub}</p>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                transition={{ duration: 0.15 }}
+                className="absolute top-12 right-0 z-[60] w-56 rounded-2xl border border-[var(--border)] bg-[var(--bg-secondary)] shadow-xl shadow-black/50 overflow-hidden origin-top-right"
+              >
+                {/* User header */}
+                <div className="px-4 py-3 border-b border-[var(--border)] flex items-center gap-3 bg-[var(--bg-primary)]">
+                  <Avatar src={profile?.avatar ?? null} name={displayName} size="sm" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate text-[var(--text-primary)]">{displayName}</p>
+                    {profile?.tag && (
+                      <p className="text-[11px] text-tumba-400 truncate font-medium">{profile.tag}</p>
+                    )}
                   </div>
-                  <ChevronRightIcon size={14} strokeWidth={1.75} className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors shrink-0" />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+                </div>
+
+                {/* Menu items */}
+                <div className="py-1">
+                  {MENU_ITEMS.map((item) => (
+                    <button
+                      key={item.tab}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openModal(item.tab);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[var(--bg-card-hover)] active:bg-[var(--bg-card)] transition-colors group"
+                    >
+                      <span className="text-tumba-400 shrink-0">{item.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-[var(--text-primary)] leading-none mb-1 group-hover:text-tumba-300 transition-colors">{item.label}</p>
+                        <p className="text-[10px] text-[var(--text-secondary)] truncate leading-none">{item.sub}</p>
+                      </div>
+                      <ChevronRightIcon size={14} strokeWidth={2} className="text-[var(--text-secondary)] group-hover:text-tumba-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Modal — rendered via portal at document.body to escape stacking contexts */}
-      {mounted && modalTab && createPortal(modalContent, document.body)}
+      {mounted && createPortal(modalContent, document.body)}
     </>
   );
 }

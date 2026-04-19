@@ -50,6 +50,7 @@ export {
   Award        as AchievementsIcon,
   Flame        as FlameIcon,
   Star         as StarIcon,
+  AlertCircle as AlertCircleIcon, 
 
   // ── Notifications ────────────────────────────────────────────────────────
   Bell         as BellIcon,

@@ -14,22 +14,33 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const albumId = searchParams.get("albumId");
-  const userId = searchParams.get("userId");
 
-  const where: Record<string, unknown> = {};
-  if (albumId) where.albumId = albumId;
-  if (userId) where.userId = userId;
+  try {
+    const media = await prisma.media.findMany({
+      where: albumId ? { albumId } : undefined,
+      orderBy: { createdAt: "desc" }, // הכי חדשים למעלה (חשוב לפיד!)
+      include: {
+        user: {
+          select: { id: true, name: true, avatar: true }, // תמונת הפרופיל!
+        },
+        album: {
+          select: { id: true, name: true },
+        },
+        // --- התוספות החברתיות שלנו ---
+        likes: {
+          select: { userId: true }, // מביאים רק את ה-ID כדי לדעת אם המשתמש הנוכחי עשה לייק
+        },
+        _count: {
+          select: { comments: true, likes: true }, // ספירה מהירה של סך הכל תגובות ולייקים
+        },
+      },
+    });
 
-  const media = await prisma.media.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    include: {
-      user: { select: { id: true, name: true } },
-      album: { select: { id: true, name: true } },
-    },
-  });
-
-  return NextResponse.json(media);
+    return NextResponse.json(media);
+  } catch (error) {
+    console.error("Failed to fetch media:", error);
+    return NextResponse.json({ error: "Failed to fetch media" }, { status: 500 });
+  }
 }
 
 // Upload media (URL-based)
