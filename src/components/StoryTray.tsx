@@ -168,6 +168,7 @@ export default function StoryTray() {
                 <UserAvatar
                   // אנחנו מנסים קודם לקחת את השם והתמונה מהמסד נתונים, ואם אין - מהסשן
                   name={myStoryGroup?.user?.name || currentUser?.name || "You"}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   avatarUrl={myStoryGroup?.user?.avatar || (currentUser as any)?.avatar || currentUser?.image || null}
                   className="w-16 h-16 text-xl"
                 />

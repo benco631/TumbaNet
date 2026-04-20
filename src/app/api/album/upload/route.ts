@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
@@ -10,12 +9,10 @@ export const dynamic = "force-dynamic";
 
 // Handle file upload via FormData
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const userId = (session.user as { id: string }).id;
 
   try {
     const formData = await req.formData();
@@ -56,7 +53,8 @@ export async function POST(req: Request) {
         url,
         caption: caption?.trim() || null,
         type,
-        userId,
+        userId: ctx.userId,
+        groupId: ctx.activeGroupId,
         albumId: albumId || null,
       },
       include: {

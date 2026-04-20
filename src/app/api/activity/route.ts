@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 // GET activity logs - supports ?type=HOST or ?type=CAR, or all
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { searchParams } = new URL(req.url);
   const type = searchParams.get("type");
 
-  const where = type ? { type: type.toUpperCase() } : {};
+  const where: Record<string, unknown> = { groupId: ctx.activeGroupId };
+  if (type) where.type = type.toUpperCase();
 
   const logs = await prisma.activityLog.findMany({
     where,
@@ -27,15 +27,21 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(logs);
 }
 
-// POST create a new activity log (admin only)
+// POST create a new activity log (group admin only)
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const isAdmin = (session.user as { isAdmin?: boolean }).isAdmin;
-  if (!isAdmin) {
+  // Check group admin
+  if (!ctx.activeGroupId) {
+    return NextResponse.json({ error: "No active group" }, { status: 400 });
+  }
+  const membership = await prisma.groupMembership.findUnique({
+    where: { userId_groupId: { userId: ctx.userId, groupId: ctx.activeGroupId } },
+  });
+  if (!membership || membership.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -43,10 +49,8 @@ export async function POST(req: NextRequest) {
     userId,
     type,
     note,
-    // CAR fields
     passengerCount,
     distanceKm,
-    // HOST fields
     attendeeCount,
     shortNotice,
   } = await req.json();
@@ -66,10 +70,9 @@ export async function POST(req: NextRequest) {
       userId,
       type: typeUpper,
       note: note?.trim() || null,
-      // CAR extras
+      groupId: ctx.activeGroupId,
       passengerCount: typeUpper === "CAR" && passengerCount != null ? parseInt(passengerCount) || null : null,
       distanceKm:     typeUpper === "CAR" && distanceKm     != null ? parseFloat(distanceKm)  || null : null,
-      // HOST extras
       attendeeCount: typeUpper === "HOST" && attendeeCount != null ? parseInt(attendeeCount) || null : null,
       shortNotice:   typeUpper === "HOST" ? Boolean(shortNotice) : false,
     },
@@ -79,15 +82,20 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(log, { status: 201 });
 }
 
-// DELETE an activity log (admin only)
+// DELETE an activity log (group admin only)
 export async function DELETE(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const isAdmin = (session.user as { isAdmin?: boolean }).isAdmin;
-  if (!isAdmin) {
+  if (!ctx.activeGroupId) {
+    return NextResponse.json({ error: "No active group" }, { status: 400 });
+  }
+  const membership = await prisma.groupMembership.findUnique({
+    where: { userId_groupId: { userId: ctx.userId, groupId: ctx.activeGroupId } },
+  });
+  if (!membership || membership.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

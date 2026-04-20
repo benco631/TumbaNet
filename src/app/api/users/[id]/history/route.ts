@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -9,12 +8,14 @@ export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const userId = params.id;
+  const gid = ctx.activeGroupId;
+  const groupFilter = gid ? { groupId: gid } : {};
 
   const [purchases, actLogs, rsvps, dictEntries] = await Promise.all([
     prisma.purchase.findMany({
@@ -30,7 +31,7 @@ export async function GET(
       },
     }),
     prisma.activityLog.findMany({
-      where: { userId },
+      where: { userId, ...groupFilter },
       orderBy: { createdAt: "desc" },
       select: { id: true, type: true, note: true, createdAt: true },
     }),
@@ -51,7 +52,7 @@ export async function GET(
       },
     }),
     prisma.dictionaryEntry.findMany({
-      where: { userId },
+      where: { userId, ...groupFilter },
       orderBy: { createdAt: "desc" },
       select: { id: true, term: true, definition: true, createdAt: true },
     }),

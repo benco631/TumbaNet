@@ -22,6 +22,10 @@ model User {
   createdAt   DateTime @default(now())
   firebaseUid String?  @unique
 
+  // Active group context
+  activeGroupId String?
+  activeGroup   Group?  @relation("ActiveGroup", fields: [activeGroupId], references: [id], onDelete: SetNull)
+
   entries               Entry[]
   dictionaryEntries     DictionaryEntry[]
   dictionaryComments    DictionaryComment[]
@@ -43,13 +47,79 @@ model User {
   shopSuggestions       ShopSuggestion[]
   shopSuggestionVotes   ShopSuggestionVote[]
 
-  
+  // Group system
+  groupsCreated     Group[]            @relation("GroupCreator")
+  groupMemberships  GroupMembership[]
+  groupJoinRequests GroupJoinRequest[]
 
-  // --- New Social Relations ---
+  // Social
   stories           Story[]
   storyViews        StoryView[]
   mediaLikes        MediaLike[]
   mediaComments     MediaComment[]
+}
+
+// === GROUP SYSTEM ===
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  avatar      String?
+  privacy     String   @default("OPEN") // OPEN or CLOSED
+  inviteCode  String   @unique @default(cuid())
+  createdById String
+  createdBy   User     @relation("GroupCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberships  GroupMembership[]
+  joinRequests GroupJoinRequest[]
+  activeUsers  User[]             @relation("ActiveGroup")
+
+  // Content scoped to this group (for future per-group data)
+  entries          Entry[]
+  events           Event[]
+  bets             Bet[]
+  albums           Album[]
+  media            Media[]
+  dictionaryEntries DictionaryEntry[]
+  activityLogs     ActivityLog[]
+  stories          Story[]
+  shopItems        ShopItem[]
+  notifications    Notification[]
+
+  @@index([inviteCode])
+  @@index([createdById])
+}
+
+model GroupMembership {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  role      String   @default("MEMBER") // ADMIN, MEMBER (extensible: MODERATOR, etc.)
+  joinedAt  DateTime @default(now())
+
+  @@unique([userId, groupId])
+  @@index([groupId])
+  @@index([userId])
+}
+
+model GroupJoinRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  message   String?  // optional message from the requester
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, groupId])
+  @@index([groupId, status])
 }
 
 model Entry {
@@ -60,11 +130,14 @@ model Entry {
   tags      String?
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+  groupId   String?
+  group     Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   month     Int
   year      Int
   createdAt DateTime @default(now())
 
   @@index([month, year])
+  @@index([groupId])
 }
 
 model MonthlySummary {
@@ -85,6 +158,8 @@ model DictionaryEntry {
   example    String?
   userId     String
   user       User     @relation(fields: [userId], references: [id])
+  groupId    String?
+  group      Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -92,6 +167,7 @@ model DictionaryEntry {
   ratings  DictionaryRating[]
 
   @@index([term])
+  @@index([groupId])
 }
 
 model DictionaryComment {
@@ -124,10 +200,14 @@ model Event {
   category    String   @default("other")
   userId      String
   user        User     @relation(fields: [userId], references: [id])
+  groupId     String?
+  group       Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 
   polls EventPoll[]
   rsvps EventRsvp[]
+
+  @@index([groupId])
 }
 
 model EventRsvp {
@@ -177,12 +257,16 @@ model Bet {
   description      String
   userId           String
   user             User     @relation(fields: [userId], references: [id])
+  groupId          String?
+  group            Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   closingDate      DateTime
   status           String   @default("OPEN") // OPEN, CLOSED, RESOLVED
   resolvedOptionId String?
   createdAt        DateTime @default(now())
 
   options BetOption[]
+
+  @@index([groupId])
 }
 
 model BetOption {
@@ -215,9 +299,13 @@ model Album {
   description String?
   userId      String
   user        User     @relation(fields: [userId], references: [id])
+  groupId     String?
+  group       Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 
   media Media[]
+
+  @@index([groupId])
 }
 
 model Media {
@@ -229,9 +317,13 @@ model Media {
   user      User     @relation(fields: [userId], references: [id])
   albumId   String?
   album     Album?   @relation(fields: [albumId], references: [id], onDelete: SetNull)
+  groupId   String?
+  group     Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   likes     MediaLike[]
   comments  MediaComment[]
+
+  @@index([groupId])
 }
 
 model MediaLike {
@@ -275,8 +367,12 @@ model ShopItem {
   createdBy    User?   @relation("ShopItemsCreated", fields: [createdById], references: [id])
   suggestionId String? @unique
   suggestion   ShopSuggestion? @relation("ApprovedShopItem", fields: [suggestionId], references: [id])
+  groupId      String?
+  group        Group?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
 
   purchases Purchase[]
+
+  @@index([groupId])
 }
 
 /// Community-suggested shop item awaiting group approval via thumbs up/down votes.
@@ -335,14 +431,17 @@ model Notification {
   recipient   User     @relation("notificationsReceived", fields: [recipientId], references: [id], onDelete: Cascade)
   actorId     String
   actor       User     @relation("notificationsSent", fields: [actorId], references: [id], onDelete: Cascade)
-  type        String // BET, EVENT, HIGHLIGHT
+  type        String // BET, EVENT, HIGHLIGHT, GROUP_JOIN_REQUEST, GROUP_JOIN_APPROVED
   message     String
   targetUrl   String?
   isRead      Boolean  @default(false)
+  groupId     String?
+  group       Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 
   @@index([recipientId, isRead])
   @@index([recipientId, createdAt])
+  @@index([groupId])
 }
 
 // === ACTIVITY LOG (hosting / car / etc.) ===
@@ -351,6 +450,8 @@ model ActivityLog {
   id             String   @id @default(cuid())
   userId         String
   user           User     @relation(fields: [userId], references: [id])
+  groupId        String?
+  group          Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   type           String // HOST, CAR
   note           String?
   // CAR fields
@@ -364,6 +465,7 @@ model ActivityLog {
   @@index([type])
   @@index([userId])
   @@index([createdAt])
+  @@index([groupId])
 }
 
 // === MONTHLY ACHIEVEMENTS ===
@@ -409,13 +511,16 @@ model Story {
   caption   String?  // אופציונלי: טקסט על הסטורי
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+  groupId   String?
+  group     Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   expiresAt DateTime // התאריך שבו הסטורי נעלם (בדרך כלל עכשיו + 24 שעות)
 
   views     StoryView[]
 
-  @@index([expiresAt]) // אינדקס סופר חשוב לשליפה מהירה של סטוריז פעילים
+  @@index([expiresAt])
   @@index([userId])
+  @@index([groupId])
 }
 
 model StoryView {

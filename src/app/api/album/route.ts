@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// GET all media, optionally filtered by albumId, userId, month
+// GET all media, optionally filtered by albumId
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -17,21 +16,23 @@ export async function GET(req: Request) {
 
   try {
     const media = await prisma.media.findMany({
-      where: albumId ? { albumId } : undefined,
-      orderBy: { createdAt: "desc" }, // הכי חדשים למעלה (חשוב לפיד!)
+      where: {
+        groupId: ctx.activeGroupId,
+        ...(albumId ? { albumId } : {}),
+      },
+      orderBy: { createdAt: "desc" },
       include: {
         user: {
-          select: { id: true, name: true, avatar: true }, // תמונת הפרופיל!
+          select: { id: true, name: true, avatar: true },
         },
         album: {
           select: { id: true, name: true },
         },
-        // --- התוספות החברתיות שלנו ---
         likes: {
-          select: { userId: true }, // מביאים רק את ה-ID כדי לדעת אם המשתמש הנוכחי עשה לייק
+          select: { userId: true },
         },
         _count: {
-          select: { comments: true, likes: true }, // ספירה מהירה של סך הכל תגובות ולייקים
+          select: { comments: true, likes: true },
         },
       },
     });
@@ -45,12 +46,11 @@ export async function GET(req: Request) {
 
 // Upload media (URL-based)
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = (session.user as { id: string }).id;
   const { url, caption, type, albumId } = await req.json();
 
   if (!url?.trim()) {
@@ -62,7 +62,8 @@ export async function POST(req: Request) {
       url: url.trim(),
       caption: caption?.trim() || null,
       type: type || "image",
-      userId,
+      userId: ctx.userId,
+      groupId: ctx.activeGroupId,
       albumId: albumId || null,
     },
     include: {
@@ -76,13 +77,11 @@ export async function POST(req: Request) {
 
 // Delete media
 export async function DELETE(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = (session.user as { id: string }).id;
-  const isAdmin = (session.user as { isAdmin?: boolean }).isAdmin;
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
 
@@ -95,7 +94,7 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (media.userId !== userId && !isAdmin) {
+  if (media.userId !== ctx.userId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

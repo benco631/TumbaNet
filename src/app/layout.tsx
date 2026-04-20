@@ -2,8 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { Space_Grotesk } from "next/font/google";
 import "@/app/globals.css";
 import AuthProvider from "@/components/AuthProvider";
+import GroupProvider from "@/components/GroupProvider";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
+import GroupGate from "@/components/GroupGate";
 
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"] });
 
@@ -46,11 +48,15 @@ export default function RootLayout({
     <html lang="he" dir="ltr">
       <body className={spaceGrotesk.className}>
         <AuthProvider>
-          <div className="min-h-screen flex flex-col">
-            <Navbar />
-            <main className="flex-1 pb-20 lg:pb-0">{children}</main>
-            <BottomNav />
-          </div>
+          <GroupProvider>
+            <GroupGate>
+              <div className="min-h-screen flex flex-col">
+                <Navbar />
+                <main className="flex-1 pb-20 lg:pb-0">{children}</main>
+                <BottomNav />
+              </div>
+            </GroupGate>
+          </GroupProvider>
         </AuthProvider>
       </body>
     </html>

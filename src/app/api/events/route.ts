@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notifyAllUsers } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const events = await prisma.event.findMany({
+    where: { groupId: ctx.activeGroupId },
     orderBy: { date: "asc" },
     include: {
       user: { select: { id: true, name: true } },
@@ -41,12 +41,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = (session.user as { id: string }).id;
   const { title, description, date, location, category, polls } = await req.json();
 
   if (!title || !description || !date) {
@@ -60,7 +59,8 @@ export async function POST(req: Request) {
       date: new Date(date),
       location: location || null,
       category: category || "other",
-      userId,
+      userId: ctx.userId,
+      groupId: ctx.activeGroupId,
       polls: polls?.length
         ? {
             create: polls.map((poll: { question: string; options: string[] }) => ({
@@ -96,24 +96,23 @@ export async function POST(req: Request) {
   });
 
   notifyAllUsers({
-    actorId: userId,
+    actorId: ctx.userId,
     actorName: event.user.name,
     type: "EVENT",
     message: `${event.user.name} added a new event: ${event.title}`,
     targetUrl: "/events",
+    groupId: ctx.activeGroupId,
   }).catch(() => {});
 
   return NextResponse.json(event);
 }
 
 export async function DELETE(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = (session.user as { id: string }).id;
-  const isAdmin = (session.user as { isAdmin?: boolean }).isAdmin;
   const { searchParams } = new URL(req.url);
   const eventId = searchParams.get("id");
 
@@ -126,7 +125,7 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
-  if (event.userId !== userId && !isAdmin) {
+  if (event.userId !== ctx.userId) {
     return NextResponse.json({ error: "Not authorized" }, { status: 403 });
   }
 

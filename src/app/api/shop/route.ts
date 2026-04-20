@@ -1,21 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// GET all shop items (active only for regular users, all for admin)
+// GET all shop items (scoped to active group)
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const isAdmin = (session.user as { isAdmin?: boolean }).isAdmin;
-
   const items = await prisma.shopItem.findMany({
-    where: isAdmin ? {} : { active: true },
+    where: {
+      active: true,
+      OR: [
+        { groupId: ctx.activeGroupId },
+        { source: "BUILT_IN", groupId: null },
+      ],
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -24,13 +27,19 @@ export async function GET() {
 
 // POST create a new shop item (admin only)
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const isAdmin = (session.user as { isAdmin?: boolean }).isAdmin;
-  if (!isAdmin) {
+  // Check group admin status
+  if (!ctx.activeGroupId) {
+    return NextResponse.json({ error: "No active group" }, { status: 400 });
+  }
+  const membership = await prisma.groupMembership.findUnique({
+    where: { userId_groupId: { userId: ctx.userId, groupId: ctx.activeGroupId } },
+  });
+  if (!membership || membership.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -48,6 +57,8 @@ export async function POST(req: NextRequest) {
       price: Math.floor(price),
       imageUrl: imageUrl?.trim() || null,
       category: category?.trim() || "general",
+      groupId: ctx.activeGroupId,
+      createdById: ctx.userId,
     },
   });
 
@@ -56,13 +67,18 @@ export async function POST(req: NextRequest) {
 
 // PUT update a shop item (admin only)
 export async function PUT(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const isAdmin = (session.user as { isAdmin?: boolean }).isAdmin;
-  if (!isAdmin) {
+  if (!ctx.activeGroupId) {
+    return NextResponse.json({ error: "No active group" }, { status: 400 });
+  }
+  const membership = await prisma.groupMembership.findUnique({
+    where: { userId_groupId: { userId: ctx.userId, groupId: ctx.activeGroupId } },
+  });
+  if (!membership || membership.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -91,13 +107,18 @@ export async function PUT(req: NextRequest) {
 
 // DELETE a shop item (admin only)
 export async function DELETE(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const isAdmin = (session.user as { isAdmin?: boolean }).isAdmin;
-  if (!isAdmin) {
+  if (!ctx.activeGroupId) {
+    return NextResponse.json({ error: "No active group" }, { status: 400 });
+  }
+  const membership = await prisma.groupMembership.findUnique({
+    where: { userId_groupId: { userId: ctx.userId, groupId: ctx.activeGroupId } },
+  });
+  if (!membership || membership.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

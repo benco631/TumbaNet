@@ -6,6 +6,7 @@ import PostCard from "./PostCard";
 
 export default function HomeFeed() {
   const { data: session } = useSession();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [posts, setPosts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -66,6 +67,7 @@ export default function HomeFeed() {
             caption: item.caption || "",
             likesCount: item._count?.likes || 0,
             commentsCount: item._count?.comments || 0,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             isLikedByMe: item.likes?.some((l: any) => l.userId === currentUserId) || false,
             createdAt: new Date(item.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
           }}

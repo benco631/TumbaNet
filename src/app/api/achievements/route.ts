@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ACHIEVEMENT_DEFS, getAchievementDef } from "@/lib/achievements";
+import { ACHIEVEMENT_DEFS } from "@/lib/achievements";
 
 export const dynamic = "force-dynamic";
 
@@ -64,11 +64,3 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ month, year, achievements });
 }
 
-/**
- * GET /api/achievements/history?userId=xxx
- * Returns a user's achievement history across all months.
- */
-export async function HEAD(req: NextRequest) {
-  // Not used — placeholder to keep route file valid
-  return new NextResponse(null, { status: 200 });
-}

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -9,12 +8,13 @@ export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const userId = params.id;
+  const gid = ctx.activeGroupId;
 
   const [user, actLogs, purchaseAgg] = await Promise.all([
     prisma.user.findUnique({
@@ -23,12 +23,12 @@ export async function GET(
         tumbaCoins: true,
         _count: {
           select: {
-            entries: true,
-            dictionaryEntries: true,
-            events: true,
-            betsCreated: true,
+            entries: gid ? { where: { groupId: gid } } : true,
+            dictionaryEntries: gid ? { where: { groupId: gid } } : true,
+            events: gid ? { where: { groupId: gid } } : true,
+            betsCreated: gid ? { where: { groupId: gid } } : true,
             wagers: true,
-            media: true,
+            media: gid ? { where: { groupId: gid } } : true,
             purchases: true,
             eventRsvps: true,
           },
@@ -36,7 +36,7 @@ export async function GET(
       },
     }),
     prisma.activityLog.findMany({
-      where: { userId },
+      where: { userId, ...(gid ? { groupId: gid } : {}) },
       select: { type: true },
     }),
     prisma.purchase.aggregate({

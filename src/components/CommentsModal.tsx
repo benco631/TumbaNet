@@ -64,7 +64,7 @@ export default function CommentsModal({ mediaId, isOpen, onClose, onCommentAdded
         setNewComment("");
         onCommentAdded(); // מעדכנים את הכרטיס הראשי
       }
-    } catch (error) {
+    } catch {
       console.error("Failed to post comment");
     } finally {
       setIsPosting(false);

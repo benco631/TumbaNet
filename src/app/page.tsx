@@ -3,11 +3,9 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import Logo from "@/components/Logo";
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { MotionPage, MotionStagger, MotionItem, MotionCard } from "@/components/motion";
-import { buttonMotion, staggerContainer, fadeInUp } from "@/lib/animations";
 import {
   HighlightsIcon,
   TumbasIcon,
@@ -18,10 +16,8 @@ import {
   AlbumIcon,
   HostIcon,
   CarIcon,
-  TrophyIcon,
-  ChevronRightIcon,
   CrownIcon,
-  AlertCircleIcon, // ← הוספנו אייקון שגיאה (נא לוודא שקיים ב-icons, או להשתמש בטקסט)
+  AlertCircleIcon,
 } from "@/lib/icons";
 import TumbaCoinIcon from "@/components/TumbaCoinIcon";
 import { CoinAmountSm } from "@/components/TumbaCoin";
@@ -64,12 +60,6 @@ const QUICK_ACCESS: { icon: LucideIcon; label: string; href: string }[] = [
   { icon: AlbumIcon,      label: "Album",      href: "/album"      },
 ];
 
-const RANK_COLORS = [
-  "from-yellow-400 to-amber-500",
-  "from-gray-300 to-gray-400",
-  "from-amber-600 to-amber-700",
-];
-const RANK_TEXT = ["text-yellow-400", "text-gray-300", "text-amber-500"];
 
 // --- Helper Components ---
 
@@ -150,7 +140,7 @@ export default function Home() {
       
       setStats(await statsRes.json());
       setUsers(await usersRes.json());
-    } catch (err) {
+    } catch {
       setError("Oops! Couldn't load the latest data. Tumbas might be asleep.");
     } finally {
       setIsLoading(false);
@@ -185,8 +175,6 @@ export default function Home() {
   }
 
   const myRank = stats?.wearIndex.findIndex((w) => w.userId === userId);
-  const topLeaderboard = stats?.wearIndex.filter((w) => w.wearIndex > 0).slice(0, 5) ?? [];
-  const maxWear = topLeaderboard[0]?.wearIndex || 1;
 
   /* ── Loading Skeleton View ── */
   if (isLoading) {

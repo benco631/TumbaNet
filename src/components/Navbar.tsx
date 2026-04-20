@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import Logo from "./Logo";
 import ProfileMenu from "./ProfileMenu";
 import NotificationBell from "./NotificationBell";
+import GroupSwitcher from "./GroupSwitcher";
 import {
   HighlightsIcon,
   TumbasIcon,
@@ -115,6 +116,7 @@ export default function Navbar() {
               <>
                 {/* Desktop: bell + profile menu + name + logout */}
                 <div className="hidden lg:flex items-center gap-2.5">
+                  <GroupSwitcher />
                   <NotificationBell />
                   <ProfileMenu />
                   <span className="text-sm text-[var(--text-secondary)] max-w-[100px] truncate">
@@ -130,6 +132,7 @@ export default function Navbar() {
 
                 {/* Mobile: bell + profile menu */}
                 <div className="lg:hidden flex items-center gap-1">
+                  <GroupSwitcher />
                   <NotificationBell />
                   <ProfileMenu />
                 </div>

@@ -4,10 +4,9 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ACHIEVEMENT_DEFS, MONTH_NAMES, getAchievementDef } from "@/lib/achievements";
-import { TrophyIcon, MedalIcon } from "@/lib/icons";
+import { ACHIEVEMENT_DEFS, MONTH_NAMES } from "@/lib/achievements";
+import { MedalIcon } from "@/lib/icons";
 import { MotionPage } from "@/components/motion";
-import { CoinAmountSm } from "@/components/TumbaCoin";
 import TumbaCoinIcon from "@/components/TumbaCoinIcon";
 
 interface AwardResult {
@@ -204,7 +203,6 @@ export default function AdminAchievementsPage() {
                 <p className="section-label mb-2">✅ Newly awarded</p>
                 <div className="space-y-2">
                   {newResults.map((r, i) => {
-                    const def = getAchievementDef(r.achievementKey);
                     return (
                       <motion.div
                         key={`${r.achievementKey}-${r.userId}`}

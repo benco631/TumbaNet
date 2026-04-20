@@ -1,21 +1,24 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// GET — fetch current user's notifications
+// GET — fetch current user's notifications for the active group
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = (session.user as { id: string }).id;
-
   const notifications = await prisma.notification.findMany({
-    where: { recipientId: userId },
+    where: {
+      recipientId: ctx.userId,
+      OR: [
+        { groupId: ctx.activeGroupId },
+        { groupId: null },
+      ],
+    },
     orderBy: { createdAt: "desc" },
     take: 50,
     include: {
@@ -24,7 +27,14 @@ export async function GET() {
   });
 
   const unreadCount = await prisma.notification.count({
-    where: { recipientId: userId, isRead: false },
+    where: {
+      recipientId: ctx.userId,
+      isRead: false,
+      OR: [
+        { groupId: ctx.activeGroupId },
+        { groupId: null },
+      ],
+    },
   });
 
   return NextResponse.json({ notifications, unreadCount });
@@ -32,22 +42,28 @@ export async function GET() {
 
 // PATCH — mark notifications as read
 export async function PATCH(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = (session.user as { id: string }).id;
   const { id, all } = await req.json();
 
   if (all) {
     await prisma.notification.updateMany({
-      where: { recipientId: userId, isRead: false },
+      where: {
+        recipientId: ctx.userId,
+        isRead: false,
+        OR: [
+          { groupId: ctx.activeGroupId },
+          { groupId: null },
+        ],
+      },
       data: { isRead: true },
     });
   } else if (id) {
     await prisma.notification.updateMany({
-      where: { id, recipientId: userId },
+      where: { id, recipientId: ctx.userId },
       data: { isRead: true },
     });
   }

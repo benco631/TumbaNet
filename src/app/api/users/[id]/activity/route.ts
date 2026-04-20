@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -17,40 +16,42 @@ export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const userId = params.id;
+  const gid = ctx.activeGroupId;
+  const groupFilter = gid ? { groupId: gid } : {};
 
   const [actLogs, entries, events, media, bets, wagers, purchases, dictEntries] =
     await Promise.all([
       prisma.activityLog.findMany({
-        where: { userId },
+        where: { userId, ...groupFilter },
         orderBy: { createdAt: "desc" },
         take: 30,
       }),
       prisma.entry.findMany({
-        where: { userId },
+        where: { userId, ...groupFilter },
         orderBy: { createdAt: "desc" },
         take: 20,
         select: { id: true, title: true, month: true, year: true, createdAt: true },
       }),
       prisma.event.findMany({
-        where: { userId },
+        where: { userId, ...groupFilter },
         orderBy: { createdAt: "desc" },
         take: 20,
         select: { id: true, title: true, createdAt: true },
       }),
       prisma.media.findMany({
-        where: { userId },
+        where: { userId, ...groupFilter },
         orderBy: { createdAt: "desc" },
         take: 20,
         select: { id: true, type: true, caption: true, createdAt: true },
       }),
       prisma.bet.findMany({
-        where: { userId },
+        where: { userId, ...groupFilter },
         orderBy: { createdAt: "desc" },
         take: 20,
         select: { id: true, title: true, createdAt: true },
@@ -83,7 +84,7 @@ export async function GET(
         },
       }),
       prisma.dictionaryEntry.findMany({
-        where: { userId },
+        where: { userId, ...groupFilter },
         orderBy: { createdAt: "desc" },
         take: 20,
         select: { id: true, term: true, createdAt: true },

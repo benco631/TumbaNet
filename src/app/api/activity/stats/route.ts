@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 // GET aggregated activity stats for the Wear Index + last host/car
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Get all activity logs
+  // Get activity logs scoped to active group
   const logs = await prisma.activityLog.findMany({
+    where: { groupId: ctx.activeGroupId },
     include: { user: { select: { id: true, name: true, avatar: true } } },
     orderBy: { createdAt: "desc" },
   });
@@ -22,33 +22,30 @@ export async function GET() {
   const lastHost = logs.find((l) => l.type === "HOST") || null;
   const lastCar = logs.find((l) => l.type === "CAR") || null;
 
-  // Compute per-user stats
-  const userStats: Record<string, { name: string; avatar: string | null; hostCount: number; carCount: number }> = {};
+  // Get group members (or all users if no group)
+  const allUsers = ctx.activeGroupId
+    ? await prisma.user.findMany({
+        where: {
+          groupMemberships: { some: { groupId: ctx.activeGroupId } },
+        },
+        select: { id: true, name: true, avatar: true },
+      })
+    : await prisma.user.findMany({
+        select: { id: true, name: true, avatar: true },
+      });
 
-  // Get all users to include those with 0 activity
-  const allUsers = await prisma.user.findMany({
-    select: { id: true, name: true, avatar: true },
-  });
+  const userStats: Record<string, { name: string; avatar: string | null; hostCount: number; carCount: number }> = {};
 
   for (const user of allUsers) {
     userStats[user.id] = { name: user.name, avatar: user.avatar, hostCount: 0, carCount: 0 };
   }
 
   for (const log of logs) {
-    if (!userStats[log.userId]) {
-      userStats[log.userId] = { name: log.user.name, avatar: log.user.avatar, hostCount: 0, carCount: 0 };
-    }
+    if (!userStats[log.userId]) continue;
     if (log.type === "HOST") userStats[log.userId].hostCount++;
     if (log.type === "CAR") userStats[log.userId].carCount++;
   }
 
-  /**
-   * Wear Index Formula:
-   * wearIndex = (hostCount * 3) + (carCount * 2)
-   *
-   * Hosting is weighted more heavily (3x) because it requires more effort
-   * (cleaning, preparing space, etc.) compared to providing a car ride (2x).
-   */
   const HOST_WEIGHT = 3;
   const CAR_WEIGHT = 2;
 

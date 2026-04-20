@@ -1,29 +1,32 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") || "";
-  const userId = (session.user as { id: string }).id;
 
-  const entries = await prisma.dictionaryEntry.findMany({
-    where: search
+  const where = {
+    groupId: ctx.activeGroupId,
+    ...(search
       ? {
           OR: [
             { term: { contains: search } },
             { definition: { contains: search } },
           ],
         }
-      : {},
+      : {}),
+  };
+
+  const entries = await prisma.dictionaryEntry.findMany({
+    where,
     include: {
       user: { select: { id: true, name: true } },
       comments: {
@@ -38,7 +41,7 @@ export async function GET(req: Request) {
 
   const entriesWithUserRating = entries.map((entry) => {
     const totalRating = entry.ratings.reduce((sum, r) => sum + r.value, 0);
-    const userRating = entry.ratings.find((r) => r.userId === userId);
+    const userRating = entry.ratings.find((r) => r.userId === ctx.userId);
     return {
       ...entry,
       ratings: undefined,
@@ -52,8 +55,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -65,14 +68,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const userId = (session.user as { id: string }).id;
-
   const entry = await prisma.dictionaryEntry.create({
     data: {
       term: term.trim(),
       definition: definition.trim(),
       example: example?.trim() || null,
-      userId,
+      userId: ctx.userId,
+      groupId: ctx.activeGroupId,
     },
     include: {
       user: { select: { id: true, name: true } },
@@ -85,8 +87,8 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  const ctx = await getSessionContext();
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -96,11 +98,8 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "ID required" }, { status: 400 });
   }
 
-  const userId = (session.user as { id: string }).id;
-  const isAdmin = (session.user as { isAdmin?: boolean }).isAdmin;
-
   const entry = await prisma.dictionaryEntry.findUnique({ where: { id } });
-  if (!entry || (entry.userId !== userId && !isAdmin)) {
+  if (!entry || (entry.userId !== ctx.userId)) {
     return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   }
 
