@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { MotionPage } from "@/components/motion";
@@ -27,7 +27,7 @@ interface JoinRequest {
   user: { id: string; name: string; email: string; avatar: string | null };
 }
 
-export default function GroupSettingsPage() {
+function GroupSettingsContent() {
   const searchParams = useSearchParams();
   const groupId = searchParams.get("groupId");
   const { activeGroup, refreshGroups } = useGroup();
@@ -227,7 +227,7 @@ export default function GroupSettingsPage() {
                 >
                   <div className="h-10 w-10 rounded-full bg-gradient-to-br from-tumba-400 to-neon-pink flex items-center justify-center text-sm font-bold text-white shrink-0">
                     {request.user.avatar ? (
-                      <img src={request.user.avatar} className="w-full h-full rounded-full object-cover" />
+                      <img src={request.user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
                     ) : (
                       request.user.name[0]?.toUpperCase()
                     )}
@@ -275,7 +275,7 @@ export default function GroupSettingsPage() {
             <div key={m.id} className="flex items-center gap-3 py-2">
               <div className="h-8 w-8 rounded-full bg-gradient-to-br from-tumba-400 to-neon-pink flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden">
                 {m.user.avatar ? (
-                  <img src={m.user.avatar} className="w-full h-full object-cover" />
+                  <img src={m.user.avatar} alt="" className="w-full h-full object-cover" />
                 ) : (
                   m.user.name[0]?.toUpperCase()
                 )}
@@ -295,5 +295,25 @@ export default function GroupSettingsPage() {
         </div>
       </div>
     </MotionPage>
+  );
+}
+
+function GroupSettingsFallback() {
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="animate-pulse space-y-4">
+        <div className="h-8 w-48 bg-tumba-500/10 rounded" />
+        <div className="h-40 bg-tumba-500/10 rounded-xl" />
+        <div className="h-40 bg-tumba-500/10 rounded-xl" />
+      </div>
+    </div>
+  );
+}
+
+export default function GroupSettingsPage() {
+  return (
+    <Suspense fallback={<GroupSettingsFallback />}>
+      <GroupSettingsContent />
+    </Suspense>
   );
 }
