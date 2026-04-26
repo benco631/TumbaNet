@@ -67,7 +67,7 @@ model Group {
   description String?
   avatar      String?
   privacy     String   @default("OPEN") // OPEN or CLOSED
-  inviteCode  String   @unique @default(cuid())
+  inviteCode  String   @unique
   createdById String
   createdBy   User     @relation("GroupCreator", fields: [createdById], references: [id])
   createdAt   DateTime @default(now())

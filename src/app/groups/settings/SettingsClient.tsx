@@ -39,6 +39,7 @@ export default function SettingsClient() {
   const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+  const [regenerating, setRegenerating] = useState(false);
 
   const fetchSettings = useCallback(async () => {
     if (!targetGroupId) return;
@@ -116,10 +117,31 @@ export default function SettingsClient() {
 
   const copyInviteLink = () => {
     if (settings?.inviteCode) {
-      const link = `${window.location.origin}/join/${settings.inviteCode}`;
+      const link = `${window.location.origin}/join?code=${settings.inviteCode}`;
       navigator.clipboard.writeText(link);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const regenerateCode = async () => {
+    if (!targetGroupId || !settings) return;
+    if (!confirm("Generate a new invite code? The old code will stop working.")) return;
+    setRegenerating(true);
+    try {
+      const res = await fetch("/api/groups/regenerate-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupId: targetGroupId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSettings({ ...settings, inviteCode: data.inviteCode });
+      }
+    } catch {
+      // handle error
+    } finally {
+      setRegenerating(false);
     }
   };
 
@@ -168,6 +190,13 @@ export default function SettingsClient() {
             className="w-full text-sm px-4 py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)] transition-colors"
           >
             Copy Invite Link
+          </button>
+          <button
+            onClick={regenerateCode}
+            disabled={regenerating}
+            className="w-full text-xs px-4 py-2 rounded-xl text-[var(--text-secondary)] hover:text-red-400 transition-colors disabled:opacity-50"
+          >
+            {regenerating ? "Generating..." : "Regenerate Code"}
           </button>
         </div>
       </div>
