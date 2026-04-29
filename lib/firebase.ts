@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
+import { getStorage, type FirebaseStorage } from "firebase/storage"; // <-- הוספנו את זה
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -21,3 +22,6 @@ const app: FirebaseApp | null =
     : null;
 
 export const auth = (app ? getAuth(app) : null) as Auth;
+
+// נייצא גם את ה-Storage כדי שנוכל לשמור בו את התמונות!
+export const storage = (app ? getStorage(app) : null) as FirebaseStorage;
