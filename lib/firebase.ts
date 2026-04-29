@@ -1,15 +1,23 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+import { getAuth, type Auth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "tumbanet-91160.firebaseapp.com",
-  projectId: "tumbanet-91160",
-  storageBucket: "tumbanet-91160.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+// Guard so module evaluation during SSR/prerender (when env vars may be absent)
+// doesn't crash with auth/invalid-api-key. The Firebase client SDK is only
+// usable in the browser anyway.
+const app: FirebaseApp | null =
+  typeof window !== "undefined"
+    ? getApps().length
+      ? getApp()
+      : initializeApp(firebaseConfig)
+    : null;
 
-export const auth = getAuth(app);
+export const auth = (app ? getAuth(app) : null) as Auth;

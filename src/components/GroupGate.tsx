@@ -6,7 +6,7 @@ import { useGroup } from "./GroupProvider";
 import GroupOnboarding from "./GroupOnboarding";
 
 // Pages that should be accessible without a group
-const UNGATED_PATHS = ["/login", "/register", "/api", "/groups", "/join"];
+const UNGATED_PATHS = ["/login", "/register", "/api", "/groups", "/join", "/staging-blocked"];
 
 export default function GroupGate({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
