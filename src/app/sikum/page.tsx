@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { HighlightsIcon, ArchiveIcon, LockIcon } from "@/lib/icons";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 
 interface Entry {
   id: string;
@@ -321,10 +322,14 @@ export default function SikumPage() {
                       )}
                       <p className="text-[var(--text-primary)]">{entry.content}</p>
                       {entry.imageUrl && (
-                        <img
+                        <Image
                           src={entry.imageUrl}
                           alt=""
-                          className="mt-2 rounded-lg max-h-48 object-cover border border-[var(--border)]"
+                          width={800}
+                          height={192}
+                          sizes="(max-width: 768px) 100vw, 800px"
+                          className="mt-2 rounded-lg max-h-48 w-auto h-auto object-cover border border-[var(--border)]"
+                          unoptimized
                         />
                       )}
                       {entry.tags && (

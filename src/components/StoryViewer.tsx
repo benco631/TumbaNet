@@ -1,6 +1,6 @@
 "use client"; // חייב להיות השורה הראשונה בהחלט!
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, Camera } from "lucide-react";
 import UserAvatar from "./UserAvatar";
@@ -25,7 +25,7 @@ export default function StoryViewer({ storyGroups, initialGroupIndex, onClose, o
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const currentGroup = storyGroups[currentGroupIndex];
-  const stories = currentGroup?.items || [];
+  const stories = useMemo<StoryItem[]>(() => currentGroup?.items ?? [], [currentGroup]);
   const isMe = currentGroup?.isMe;
 
   // עדכון צפיות

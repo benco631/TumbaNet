@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { AlbumIcon, UploadIcon, VideoIcon, PhotoIcon, LibraryIcon, CloseIcon } from "@/lib/icons";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback, useRef } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { MotionPage } from "@/components/motion";
 import { staggerContainer, fadeInUp } from "@/lib/animations";
@@ -420,12 +421,19 @@ export default function AlbumPage() {
                 onClick={() => { setSelectedAlbum(album.id); setViewMode("gallery"); fetchMedia(album.id); }}
               >
                 {/* Cover */}
-                <div className="aspect-video rounded-xl bg-[var(--bg-secondary)] mb-3 overflow-hidden flex items-center justify-center">
+                <div className="relative aspect-video rounded-xl bg-[var(--bg-secondary)] mb-3 overflow-hidden flex items-center justify-center">
                   {album.media[0] ? (
                     album.media[0].type === "video" ? (
                       <VideoIcon size={36} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
                     ) : (
-                      <img src={album.media[0].url} alt="" className="w-full h-full object-cover" />
+                      <Image
+                        src={album.media[0].url}
+                        alt=""
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover"
+                        unoptimized
+                      />
                     )
                   ) : (
                     <PhotoIcon size={28} strokeWidth={1.5} className="text-[var(--text-secondary)]/30" />
@@ -481,7 +489,14 @@ export default function AlbumPage() {
                     <VideoIcon size={36} strokeWidth={1.5} className="text-[var(--text-secondary)]" />
                   </div>
                 ) : (
-                  <img src={item.url} alt={item.caption || ""} className="w-full h-full object-cover" />
+                  <Image
+                    src={item.url}
+                    alt={item.caption || ""}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    className="object-cover"
+                    unoptimized
+                  />
                 )}
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
@@ -521,7 +536,15 @@ export default function AlbumPage() {
             {lightbox.type === "video" ? (
               <video src={lightbox.url} controls className="w-full max-h-[80vh] rounded-xl" />
             ) : (
-              <img src={lightbox.url} alt={lightbox.caption || ""} className="w-full max-h-[80vh] object-contain rounded-xl" />
+              <Image
+                src={lightbox.url}
+                alt={lightbox.caption || ""}
+                width={1600}
+                height={1200}
+                sizes="100vw"
+                className="w-full h-auto max-h-[80vh] object-contain rounded-xl"
+                unoptimized
+              />
             )}
             <div className="mt-3 text-center">
               {lightbox.caption && (

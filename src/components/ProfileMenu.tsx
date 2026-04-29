@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion"; // <-- הוספנו את Framer Motion
 import TumbaCoinIcon from "@/components/TumbaCoinIcon";
 import {
@@ -116,11 +117,16 @@ function Avatar({
         : "h-8 w-8 text-sm";
 
   if (src) {
+    const dim = size === "lg" ? 80 : size === "md" ? 40 : 32;
     return (
-      <img
+      <Image
         src={src}
         alt={name ?? ""}
+        width={dim}
+        height={dim}
+        sizes={`${dim}px`}
         className={`${cls} rounded-full object-cover shrink-0`}
+        unoptimized
       />
     );
   }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { MotionPage } from "@/components/motion";
 import { useGroup } from "@/components/GroupProvider";
@@ -254,9 +255,16 @@ export default function SettingsClient() {
                   layout
                   className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)]"
                 >
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-tumba-400 to-neon-pink flex items-center justify-center text-sm font-bold text-white shrink-0">
+                  <div className="relative h-10 w-10 rounded-full bg-gradient-to-br from-tumba-400 to-neon-pink flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden">
                     {request.user.avatar ? (
-                      <img src={request.user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                      <Image
+                        src={request.user.avatar}
+                        alt=""
+                        fill
+                        sizes="40px"
+                        className="rounded-full object-cover"
+                        unoptimized
+                      />
                     ) : (
                       request.user.name[0]?.toUpperCase()
                     )}
@@ -302,9 +310,16 @@ export default function SettingsClient() {
         <div className="space-y-2">
           {settings.memberships.map((m) => (
             <div key={m.id} className="flex items-center gap-3 py-2">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-tumba-400 to-neon-pink flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden">
+              <div className="relative h-8 w-8 rounded-full bg-gradient-to-br from-tumba-400 to-neon-pink flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden">
                 {m.user.avatar ? (
-                  <img src={m.user.avatar} alt="" className="w-full h-full object-cover" />
+                  <Image
+                    src={m.user.avatar}
+                    alt=""
+                    fill
+                    sizes="32px"
+                    className="object-cover"
+                    unoptimized
+                  />
                 ) : (
                   m.user.name[0]?.toUpperCase()
                 )}

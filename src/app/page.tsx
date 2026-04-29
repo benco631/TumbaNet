@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
@@ -91,12 +92,19 @@ function RankBadge({ rank }: { rank: number }) {
 
 // קומפוננטת Avatar חכמה שיודעת להתמודד עם תמונות או ליפול לאות ראשונה
 function UserAvatar({ name, avatarUrl, className = "", isSquare = false }: { name: string, avatarUrl?: string | null, className?: string, isSquare?: boolean }) {
-  const baseClasses = `shrink-0 bg-gradient-to-br from-tumba-400 to-neon-pink flex items-center justify-center font-extrabold text-white shadow-sm overflow-hidden ${isSquare ? 'rounded-2xl' : 'rounded-full'} ${className}`;
-  
+  const baseClasses = `relative shrink-0 bg-gradient-to-br from-tumba-400 to-neon-pink flex items-center justify-center font-extrabold text-white shadow-sm overflow-hidden ${isSquare ? 'rounded-2xl' : 'rounded-full'} ${className}`;
+
   if (avatarUrl) {
     return (
       <div className={baseClasses}>
-        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+        <Image
+          src={avatarUrl}
+          alt={name}
+          fill
+          sizes="84px"
+          className="object-cover"
+          unoptimized
+        />
       </div>
     );
   }

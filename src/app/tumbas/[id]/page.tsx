@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
 import { CoinAmountLg } from "@/components/TumbaCoin";
 import {
@@ -44,11 +45,16 @@ function Avatar({ src, name, size }: { src: string | null; name: string; size: "
       ? "h-24 w-24 text-4xl shadow-lg shadow-tumba-500/20"
       : "h-16 w-16 text-2xl";
   if (src) {
+    const dim = size === "xl" ? 96 : 64;
     return (
-      <img
+      <Image
         src={src}
         alt={name}
+        width={dim}
+        height={dim}
+        sizes={`${dim}px`}
         className={`${cls} rounded-full object-cover shrink-0`}
+        unoptimized
       />
     );
   }
