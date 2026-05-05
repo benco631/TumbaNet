@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { uploadFileToFirebase } from "@/lib/firebaseUpload";
 import { MotionPage } from "@/components/motion";
 import { staggerContainer, fadeInUp } from "@/lib/animations";
 import PostCard from "@/components/PostCard";
@@ -87,19 +88,36 @@ export default function AlbumPage() {
     if (!files || files.length === 0) return;
     setUploading(true);
 
-    for (const file of Array.from(files)) {
-      const formData = new FormData();
-      formData.append("file", file);
-      if (uploadCaption) formData.append("caption", uploadCaption);
-      if (uploadAlbumId) formData.append("albumId", uploadAlbumId);
+    try {
+      for (const file of Array.from(files)) {
+        // 1. Upload file to Firebase Storage
+        const imageUrl = await uploadFileToFirebase(file, "posts");
 
-      await fetch("/api/album/upload", { method: "POST", body: formData });
+        // 2. Determine if it's a video or image
+        const isVideo = file.type.startsWith("video/");
+
+        // 3. Send the URL to our API to save to database
+        await fetch("/api/album", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: imageUrl,
+            caption: uploadCaption || null,
+            type: isVideo ? "video" : "image",
+            albumId: uploadAlbumId || null,
+          }),
+        });
+      }
+
+      setUploadCaption("");
+      setShowUpload(false);
+      fetchMedia(selectedAlbum || undefined);
+    } catch (error) {
+      console.error("Upload failed:", error);
+      alert("Failed to upload. Please try again.");
+    } finally {
+      setUploading(false);
     }
-
-    setUploadCaption("");
-    setShowUpload(false);
-    setUploading(false);
-    fetchMedia(selectedAlbum || undefined);
   }
 
   async function handleUrlUpload() {

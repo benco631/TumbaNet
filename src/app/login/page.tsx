@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { firebaseAuth } from "@/lib/firebase";
 import Logo from "@/components/Logo";
 import { MotionPage } from "@/components/motion";
 import { buttonMotion } from "@/lib/animations";
@@ -21,18 +23,37 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      // 1. Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(
+        firebaseAuth,
+        email,
+        password
+      );
+      const firebaseUser = userCredential.user;
 
-    if (result?.error) {
-      setError("Invalid email or password");
-      setLoading(false);
-    } else {
+      // 2. Get the Firebase ID token
+      const idToken = await firebaseUser.getIdToken();
+
+      // 3. Sign into NextAuth using the Firebase token
+      const result = await signIn("credentials", {
+        token: idToken,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError("Failed to authenticate");
+        setLoading(false);
+        return;
+      }
+
+      // 4. Redirect to dashboard
       router.push("/sikum");
       router.refresh();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Invalid email or password";
+      setError(message);
+      setLoading(false);
     }
   }
 

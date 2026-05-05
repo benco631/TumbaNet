@@ -4,7 +4,8 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion"; // <-- הוספנו את Framer Motion
+import { motion, AnimatePresence } from "framer-motion";
+import { uploadFileToFirebase } from "@/lib/firebaseUpload";
 import TumbaCoinIcon from "@/components/TumbaCoinIcon";
 import {
   EditIcon,
@@ -381,9 +382,16 @@ export default function ProfileMenu({ size = "sm" }: ProfileMenuProps) {
     if (!avatarFile) return;
     setAvatarUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", avatarFile);
-      const res = await fetch("/api/users/avatar", { method: "POST", body: fd });
+      // 1. Upload file to Firebase Storage
+      const imageUrl = await uploadFileToFirebase(avatarFile, "avatars");
+
+      // 2. Send the URL to our API to update the database
+      const res = await fetch("/api/users/avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatar: imageUrl }),
+      });
+
       if (res.ok) {
         const { avatar } = await res.json();
         setProfile((p) => (p ? { ...p, avatar } : p));
@@ -391,7 +399,12 @@ export default function ProfileMenu({ size = "sm" }: ProfileMenuProps) {
         setAvatarPreview(null);
         await updateSession();
       }
-    } finally { setAvatarUploading(false); }
+    } catch (error) {
+      console.error("Avatar upload failed:", error);
+      alert("Failed to upload avatar. Please try again.");
+    } finally {
+      setAvatarUploading(false);
+    }
   }
 
   function cancelAvatarPreview() {

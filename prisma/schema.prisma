@@ -9,9 +9,9 @@ datasource db {
 
 model User {
   id          String   @id @default(cuid())
+  firebaseUid String   @unique @db.Text
   name        String
   email       String   @unique
-  password    String
   avatar      String?
   bio         String?
   nickname    String?
@@ -20,7 +20,6 @@ model User {
   status      String   @default("")
   isAdmin     Boolean  @default(false)
   createdAt   DateTime @default(now())
-  firebaseUid String?  @unique
 
   // Active group context
   activeGroupId String?

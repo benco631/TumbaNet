@@ -4,6 +4,8 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { firebaseAuth } from "@/lib/firebase";
 import Logo from "@/components/Logo";
 import { MotionPage } from "@/components/motion";
 import { buttonMotion } from "@/lib/animations";
@@ -20,25 +22,51 @@ export default function RegisterPage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
+    try {
+      // 1. Create user in Firebase
+      const userCredential = await createUserWithEmailAndPassword(
+        firebaseAuth,
+        email,
+        password
+      );
+      const firebaseUser = userCredential.user;
 
-    const data = await res.json();
+      // 2. Create user profile in our Prisma database
+      const registerRes = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firebaseUid: firebaseUser.uid,
+          email: firebaseUser.email,
+          name,
+        }),
+      });
 
-    if (!res.ok) {
-      setError(data.error || "Something went wrong");
+      if (!registerRes.ok) {
+        const data = await registerRes.json();
+        throw new Error(data.error || "Failed to create profile");
+      }
+
+      // 3. Get Firebase ID token
+      const idToken = await firebaseUser.getIdToken();
+
+      // 4. Sign into NextAuth using the Firebase token
+      const signInResult = await signIn("credentials", {
+        token: idToken,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        throw new Error("Failed to sign in");
+      }
+
+      // 5. Redirect to dashboard
+      window.location.href = "/sikum";
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
       setLoading(false);
-      return;
     }
-
-    await signIn("credentials", {
-      email,
-      password,
-      callbackUrl: "/sikum",
-    });
   }
 
   return (

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { Plus } from "lucide-react";
+import { uploadFileToFirebase } from "@/lib/firebaseUpload";
 import UserAvatar from "./UserAvatar";
 import StoryViewer from "./StoryViewer";
 
@@ -65,50 +66,30 @@ export default function StoryTray() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 1. משנים סטייט כדי להראות חיווי טעינה על העיגול שלך (אופציונלי אבל מומלץ)
-    // setIsUploadingStory(true); 
-
     try {
-      // 2. מעלים את הקובץ לשרת (משתמשים בנתיב ההעלאה הקיים שלכם שמחובר ל-Firebase)
-      const formData = new FormData();
-      formData.append("file", file);
-      
-      
-      const uploadRes = await fetch("/api/stories/upload", { 
-        method: "POST", 
-        body: formData
-      });
-      
-      if (!uploadRes.ok) throw new Error("Failed to upload file to Firebase");
-      
-      // כאן אנחנו צריכים לקבל את ה-URL של התמונה שחזרה מ-Firebase
-      // נניח שזה חוזר ב- uploadData.url 
-      const uploadData = await uploadRes.json(); 
-      const imageUrl = uploadData.url; 
+      // 1. Upload file directly to Firebase Storage
+      const imageUrl = await uploadFileToFirebase(file, "stories");
 
-      if (!imageUrl) throw new Error("No URL returned from upload");
+      if (!imageUrl) throw new Error("No URL returned from Firebase upload");
 
-      // 3. שומרים את הסטורי החדש במסד הנתונים שלנו
+      // 2. Save story metadata to the database
       const storyRes = await fetch("/api/stories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          url: imageUrl, 
-          type: file.type.startsWith("video/") ? "video" : "image" 
+        body: JSON.stringify({
+          url: imageUrl,
+          type: file.type.startsWith("video/") ? "video" : "image",
         }),
       });
 
-      if (!storyRes.ok) throw new Error("Failed to save story to DB");
+      if (!storyRes.ok) throw new Error("Failed to save story to database");
 
-      // 4. מרעננים את הסטוריז כדי שהסטורי החדש יופיע מיד
-      const newStoriesRes = await fetch("/api/stories");
-      setGroupedStories(await newStoriesRes.json());
-
+      // 3. Refresh stories so the new story appears immediately
+      loadStories();
     } catch (error) {
       console.error("Story upload error:", error);
-      alert("תקלה בהעלאת הסטורי, נסה שוב!");
+      alert("Failed to upload story. Please try again.");
     } finally {
-      // מאפסים את ה-input כדי שאפשר יהיה להעלות שוב את אותה תמונה אם רוצים
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
