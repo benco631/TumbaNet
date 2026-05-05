@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "./prisma";
-import { auth as firebaseAdmin } from "./firebase-admin";
+import { adminAuth as firebaseAdmin } from "./firebase-admin";
 
 /**
  * Get the current user's id and activeGroupId from the session.
