@@ -30,7 +30,7 @@ export async function POST(req: Request) {
           firebaseUid: uid,
           email: email || "",
           name: "New User",
-          password: "",
+          
         },
       });
     }
