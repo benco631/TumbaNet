@@ -8,98 +8,86 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  firebaseUid String   @unique @db.Text
-  name        String
-  email       String   @unique
-  avatar      String?
-  bio         String?
-  nickname    String?
-  tag         String?
-  tumbaCoins  Int      @default(100)
-  status      String   @default("")
-  isAdmin     Boolean  @default(false)
-  createdAt   DateTime @default(now())
-
-  // Active group context
-  activeGroupId String?
-  activeGroup   Group?  @relation("ActiveGroup", fields: [activeGroupId], references: [id], onDelete: SetNull)
-
-  entries               Entry[]
-  dictionaryEntries     DictionaryEntry[]
+  id                    String               @id @default(cuid())
+  firebaseUid           String               @unique
+  name                  String
+  email                 String               @unique
+  avatar                String?
+  bio                   String?
+  nickname              String?
+  tag                   String?
+  tumbaCoins            Int                  @default(100)
+  status                String               @default("")
+  isAdmin               Boolean              @default(false)
+  createdAt             DateTime             @default(now())
+  activeGroupId         String?
+  activityLogs          ActivityLog[]
+  albums                Album[]
+  betsCreated           Bet[]
+  coinTransactions      CoinTransaction[]
   dictionaryComments    DictionaryComment[]
+  dictionaryEntries     DictionaryEntry[]
   dictionaryRatings     DictionaryRating[]
+  entries               Entry[]
   events                Event[]
   eventPollVotes        EventPollVote[]
   eventRsvps            EventRsvp[]
-  betsCreated           Bet[]
-  wagers                Wager[]
+  groupsCreated         Group[]              @relation("GroupCreator")
+  groupJoinRequests     GroupJoinRequest[]
+  groupMemberships      GroupMembership[]
   media                 Media[]
-  albums                Album[]
-  purchases             Purchase[]
-  activityLogs          ActivityLog[]
-  notificationsReceived Notification[]       @relation("notificationsReceived")
-  notificationsSent     Notification[]       @relation("notificationsSent")
+  mediaComments         MediaComment[]
+  mediaLikes            MediaLike[]
   monthlyAchievements   MonthlyAchievement[]
-  coinTransactions      CoinTransaction[]
+  notificationsSent     Notification[]       @relation("notificationsSent")
+  notificationsReceived Notification[]       @relation("notificationsReceived")
+  purchases             Purchase[]
   shopItemsCreated      ShopItem[]           @relation("ShopItemsCreated")
   shopSuggestions       ShopSuggestion[]
   shopSuggestionVotes   ShopSuggestionVote[]
-
-  // Group system
-  groupsCreated     Group[]            @relation("GroupCreator")
-  groupMemberships  GroupMembership[]
-  groupJoinRequests GroupJoinRequest[]
-
-  // Social
-  stories           Story[]
-  storyViews        StoryView[]
-  mediaLikes        MediaLike[]
-  mediaComments     MediaComment[]
+  stories               Story[]
+  storyViews            StoryView[]
+  activeGroup           Group?               @relation("ActiveGroup", fields: [activeGroupId], references: [id])
+  wagers                Wager[]
 }
 
-// === GROUP SYSTEM ===
-
 model Group {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  avatar      String?
-  privacy     String   @default("OPEN") // OPEN or CLOSED
-  inviteCode  String   @unique
-  createdById String
-  createdBy   User     @relation("GroupCreator", fields: [createdById], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  memberships  GroupMembership[]
-  joinRequests GroupJoinRequest[]
-  activeUsers  User[]             @relation("ActiveGroup")
-
-  // Content scoped to this group (for future per-group data)
-  entries          Entry[]
-  events           Event[]
-  bets             Bet[]
-  albums           Album[]
-  media            Media[]
+  id                String             @id @default(cuid())
+  name              String
+  description       String?
+  avatar            String?
+  privacy           String             @default("OPEN")
+  inviteCode        String             @unique
+  createdById       String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  activityLogs      ActivityLog[]
+  albums            Album[]
+  bets              Bet[]
   dictionaryEntries DictionaryEntry[]
-  activityLogs     ActivityLog[]
-  stories          Story[]
-  shopItems        ShopItem[]
-  notifications    Notification[]
+  entries           Entry[]
+  events            Event[]
+  createdBy         User               @relation("GroupCreator", fields: [createdById], references: [id])
+  joinRequests      GroupJoinRequest[]
+  memberships       GroupMembership[]
+  media             Media[]
+  notifications     Notification[]
+  shopItems         ShopItem[]
+  stories           Story[]
+  activeUsers       User[]             @relation("ActiveGroup")
 
   @@index([inviteCode])
   @@index([createdById])
 }
 
 model GroupMembership {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  groupId   String
-  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  role      String   @default("MEMBER") // ADMIN, MEMBER (extensible: MODERATOR, etc.)
-  joinedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  userId   String
+  groupId  String
+  role     String   @default("MEMBER")
+  joinedAt DateTime @default(now())
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, groupId])
   @@index([groupId])
@@ -109,13 +97,13 @@ model GroupMembership {
 model GroupJoinRequest {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   groupId   String
-  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  message   String?  // optional message from the requester
+  status    String   @default("PENDING")
+  message   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, groupId])
   @@index([groupId, status])
@@ -128,12 +116,12 @@ model Entry {
   imageUrl  String?
   tags      String?
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
   groupId   String?
-  group     Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   month     Int
   year      Int
   createdAt DateTime @default(now())
+  group     Group?   @relation(fields: [groupId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@index([month, year])
   @@index([groupId])
@@ -151,19 +139,18 @@ model MonthlySummary {
 }
 
 model DictionaryEntry {
-  id         String   @id @default(cuid())
+  id         String              @id @default(cuid())
   term       String
   definition String
   example    String?
   userId     String
-  user       User     @relation(fields: [userId], references: [id])
   groupId    String?
-  group      Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  comments DictionaryComment[]
-  ratings  DictionaryRating[]
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  comments   DictionaryComment[]
+  group      Group?              @relation(fields: [groupId], references: [id])
+  user       User                @relation(fields: [userId], references: [id])
+  ratings    DictionaryRating[]
 
   @@index([term])
   @@index([groupId])
@@ -173,38 +160,37 @@ model DictionaryComment {
   id                String          @id @default(cuid())
   content           String
   userId            String
-  user              User            @relation(fields: [userId], references: [id])
   dictionaryEntryId String
-  dictionaryEntry   DictionaryEntry @relation(fields: [dictionaryEntryId], references: [id], onDelete: Cascade)
   createdAt         DateTime        @default(now())
+  dictionaryEntry   DictionaryEntry @relation(fields: [dictionaryEntryId], references: [id], onDelete: Cascade)
+  user              User            @relation(fields: [userId], references: [id])
 }
 
 model DictionaryRating {
   id                String          @id @default(cuid())
   value             Int
   userId            String
-  user              User            @relation(fields: [userId], references: [id])
   dictionaryEntryId String
   dictionaryEntry   DictionaryEntry @relation(fields: [dictionaryEntryId], references: [id], onDelete: Cascade)
+  user              User            @relation(fields: [userId], references: [id])
 
   @@unique([userId, dictionaryEntryId])
 }
 
 model Event {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   title       String
   description String
   date        DateTime
   location    String?
-  category    String   @default("other")
+  category    String      @default("other")
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
   groupId     String?
-  group       Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-
-  polls EventPoll[]
-  rsvps EventRsvp[]
+  createdAt   DateTime    @default(now())
+  group       Group?      @relation(fields: [groupId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+  polls       EventPoll[]
+  rsvps       EventRsvp[]
 
   @@index([groupId])
 }
@@ -212,68 +198,62 @@ model Event {
 model EventRsvp {
   id      String @id @default(cuid())
   userId  String
-  user    User   @relation(fields: [userId], references: [id])
   eventId String
+  status  String
   event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  status  String // GOING, MAYBE, NOT_GOING
+  user    User   @relation(fields: [userId], references: [id])
 
   @@unique([userId, eventId])
 }
 
 model EventPoll {
-  id       String @id @default(cuid())
+  id       String            @id @default(cuid())
   question String
   eventId  String
-  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
-  options EventPollOption[]
+  event    Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  options  EventPollOption[]
 }
 
 model EventPollOption {
-  id     String    @id @default(cuid())
+  id     String          @id @default(cuid())
   text   String
   pollId String
-  poll   EventPoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
-
-  votes EventPollVote[]
+  poll   EventPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes  EventPollVote[]
 }
 
 model EventPollVote {
   id       String          @id @default(cuid())
   userId   String
-  user     User            @relation(fields: [userId], references: [id])
   optionId String
   option   EventPollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id])
 
   @@unique([userId, optionId])
 }
 
-// === TUMBA MARKET (Betting) ===
-
 model Bet {
-  id               String   @id @default(cuid())
+  id               String      @id @default(cuid())
   title            String
   description      String
   userId           String
-  user             User     @relation(fields: [userId], references: [id])
   groupId          String?
-  group            Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   closingDate      DateTime
-  status           String   @default("OPEN") // OPEN, CLOSED, RESOLVED
+  status           String      @default("OPEN")
   resolvedOptionId String?
-  createdAt        DateTime @default(now())
-
-  options BetOption[]
+  createdAt        DateTime    @default(now())
+  group            Group?      @relation(fields: [groupId], references: [id])
+  user             User        @relation(fields: [userId], references: [id])
+  options          BetOption[]
 
   @@index([groupId])
 }
 
 model BetOption {
-  id    String @id @default(cuid())
-  text  String
-  betId String
-  bet   Bet    @relation(fields: [betId], references: [id], onDelete: Cascade)
-
+  id     String  @id @default(cuid())
+  text   String
+  betId  String
+  bet    Bet     @relation(fields: [betId], references: [id], onDelete: Cascade)
   wagers Wager[]
 }
 
@@ -281,46 +261,43 @@ model Wager {
   id          String    @id @default(cuid())
   amount      Int
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
   betOptionId String
-  betOption   BetOption @relation(fields: [betOptionId], references: [id], onDelete: Cascade)
   payout      Int?
   createdAt   DateTime  @default(now())
+  betOption   BetOption @relation(fields: [betOptionId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id])
 
   @@unique([userId, betOptionId])
 }
-
-// === SHARED ALBUM (Posts) ===
 
 model Album {
   id          String   @id @default(cuid())
   name        String
   description String?
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
   groupId     String?
-  group       Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
-
-  media Media[]
+  group       Group?   @relation(fields: [groupId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+  media       Media[]
 
   @@index([groupId])
 }
 
 model Media {
-  id        String   @id @default(cuid())
+  id        String         @id @default(cuid())
   url       String
   caption   String?
-  type      String   @default("image") // image, video
+  type      String         @default("image")
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
   albumId   String?
-  album     Album?   @relation(fields: [albumId], references: [id], onDelete: SetNull)
   groupId   String?
-  group     Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  createdAt DateTime @default(now())
-  likes     MediaLike[]
+  createdAt DateTime       @default(now())
+  album     Album?         @relation(fields: [albumId], references: [id])
+  group     Group?         @relation(fields: [groupId], references: [id])
+  user      User           @relation(fields: [userId], references: [id])
   comments  MediaComment[]
+  likes     MediaLike[]
 
   @@index([groupId])
 }
@@ -328,71 +305,65 @@ model Media {
 model MediaLike {
   id        String   @id @default(cuid())
   mediaId   String
-  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
 
-  @@unique([mediaId, userId]) // אי אפשר לעשות לייק פעמיים לאותה תמונה!
+  @@unique([mediaId, userId])
 }
 
 model MediaComment {
   id        String   @id @default(cuid())
   content   String
   mediaId   String
-  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
 }
 
-// === TUMBA SHOP ===
-
 model ShopItem {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  price       Int
-  imageUrl    String?
-  category    String   @default("general")
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Provenance: ADMIN = created via admin panel, BUILT_IN = seeded, COMMUNITY = promoted from an approved suggestion
-  source       String  @default("ADMIN")
-  builtInKey   String? @unique
+  id           String          @id @default(cuid())
+  title        String
+  description  String
+  price        Int
+  imageUrl     String?
+  category     String          @default("general")
+  active       Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  source       String          @default("ADMIN")
+  builtInKey   String?         @unique
   createdById  String?
-  createdBy    User?   @relation("ShopItemsCreated", fields: [createdById], references: [id])
-  suggestionId String? @unique
-  suggestion   ShopSuggestion? @relation("ApprovedShopItem", fields: [suggestionId], references: [id])
+  suggestionId String?         @unique
   groupId      String?
-  group        Group?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
-
-  purchases Purchase[]
+  purchases    Purchase[]
+  createdBy    User?           @relation("ShopItemsCreated", fields: [createdById], references: [id])
+  group        Group?          @relation(fields: [groupId], references: [id])
+  suggestion   ShopSuggestion? @relation("ApprovedShopItem", fields: [suggestionId], references: [id])
 
   @@index([groupId])
 }
 
 /// Community-suggested shop item awaiting group approval via thumbs up/down votes.
 model ShopSuggestion {
-  id             String   @id @default(cuid())
+  id             String               @id @default(cuid())
   title          String
   description    String
   price          Int
-  category       String   @default("general")
+  category       String               @default("general")
   imageUrl       String?
-  status         String   @default("PENDING") // PENDING, APPROVED, REJECTED, EXPIRED
+  status         String               @default("PENDING")
   creatorId      String
-  creator        User     @relation(fields: [creatorId], references: [id])
   expiresAt      DateTime
   resolvedAt     DateTime?
   resolutionNote String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  votes        ShopSuggestionVote[]
-  approvedItem ShopItem?            @relation("ApprovedShopItem")
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  approvedItem   ShopItem?            @relation("ApprovedShopItem")
+  creator        User                 @relation(fields: [creatorId], references: [id])
+  votes          ShopSuggestionVote[]
 
   @@index([status])
   @@index([creatorId])
@@ -402,11 +373,11 @@ model ShopSuggestion {
 model ShopSuggestionVote {
   id           String         @id @default(cuid())
   suggestionId String
-  suggestion   ShopSuggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
   userId       String
-  user         User           @relation(fields: [userId], references: [id])
-  value        Int // +1 for upvote, -1 for downvote
+  value        Int
   createdAt    DateTime       @default(now())
+  suggestion   ShopSuggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id])
 
   @@unique([suggestionId, userId])
   @@index([suggestionId])
@@ -415,51 +386,45 @@ model ShopSuggestionVote {
 model Purchase {
   id         String   @id @default(cuid())
   userId     String
-  user       User     @relation(fields: [userId], references: [id])
   shopItemId String
-  shopItem   ShopItem @relation(fields: [shopItemId], references: [id])
-  price      Int // price at time of purchase
+  price      Int
   createdAt  DateTime @default(now())
+  shopItem   ShopItem @relation(fields: [shopItemId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
 }
-
-// === NOTIFICATIONS ===
 
 model Notification {
   id          String   @id @default(cuid())
   recipientId String
-  recipient   User     @relation("notificationsReceived", fields: [recipientId], references: [id], onDelete: Cascade)
   actorId     String
-  actor       User     @relation("notificationsSent", fields: [actorId], references: [id], onDelete: Cascade)
-  type        String // BET, EVENT, HIGHLIGHT, GROUP_JOIN_REQUEST, GROUP_JOIN_APPROVED
+  type        String
   message     String
   targetUrl   String?
   isRead      Boolean  @default(false)
   groupId     String?
-  group       Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
+  actor       User     @relation("notificationsSent", fields: [actorId], references: [id], onDelete: Cascade)
+  group       Group?   @relation(fields: [groupId], references: [id])
+  recipient   User     @relation("notificationsReceived", fields: [recipientId], references: [id], onDelete: Cascade)
 
   @@index([recipientId, isRead])
   @@index([recipientId, createdAt])
   @@index([groupId])
 }
 
-// === ACTIVITY LOG (hosting / car / etc.) ===
-
 model ActivityLog {
   id             String   @id @default(cuid())
   userId         String
-  user           User     @relation(fields: [userId], references: [id])
   groupId        String?
-  group          Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  type           String // HOST, CAR
+  type           String
   note           String?
-  // CAR fields
-  passengerCount Int? // number of passengers carried
-  distanceKm     Float? // distance driven in km
-  // HOST fields
-  attendeeCount  Int? // number of attendees at the event
-  shortNotice    Boolean  @default(false) // was this short-notice hosting?
+  passengerCount Int?
+  distanceKm     Float?
+  attendeeCount  Int?
+  shortNotice    Boolean  @default(false)
   createdAt      DateTime @default(now())
+  group          Group?   @relation(fields: [groupId], references: [id])
+  user           User     @relation(fields: [userId], references: [id])
 
   @@index([type])
   @@index([userId])
@@ -467,54 +432,47 @@ model ActivityLog {
   @@index([groupId])
 }
 
-// === MONTHLY ACHIEVEMENTS ===
-
 /// One record per user per achievement per month. Unique constraint prevents duplicate rewards.
 model MonthlyAchievement {
   id             String   @id @default(cuid())
   achievementKey String
-  month          Int // 1-12
+  month          Int
   year           Int
   userId         String
-  user           User     @relation(fields: [userId], references: [id])
   rewardCoins    Int
-  metricValue    Float? // numeric value that determined the winner
-  metricLabel    String? // human-readable description of metricValue
+  metricValue    Float?
+  metricLabel    String?
   createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id])
 
   @@unique([achievementKey, month, year, userId])
   @@index([month, year])
   @@index([userId])
 }
 
-// === COIN TRANSACTIONS ===
-
 /// Audit log for all TumbaCoin credits (achievement rewards, etc.)
 model CoinTransaction {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  amount    Int // positive = credit, negative = debit
+  amount    Int
   reason    String
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 
   @@index([userId, createdAt])
 }
 
-// === STORIES (24h Ephemeral) ===
-
 model Story {
-  id        String   @id @default(cuid())
-  url       String   // הקישור לתמונה או לוידאו מ-Firebase
-  type      String   @default("image") // image, video
-  caption   String?  // אופציונלי: טקסט על הסטורי
+  id        String      @id @default(cuid())
+  url       String
+  type      String      @default("image")
+  caption   String?
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
   groupId   String?
-  group     Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  createdAt DateTime @default(now())
-  expiresAt DateTime // התאריך שבו הסטורי נעלם (בדרך כלל עכשיו + 24 שעות)
-
+  createdAt DateTime    @default(now())
+  expiresAt DateTime
+  group     Group?      @relation(fields: [groupId], references: [id])
+  user      User        @relation(fields: [userId], references: [id])
   views     StoryView[]
 
   @@index([expiresAt])
@@ -525,10 +483,10 @@ model Story {
 model StoryView {
   id        String   @id @default(cuid())
   storyId   String
-  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
 
-  @@unique([storyId, userId]) // מבטיח שמשתמש נספר רק פעם אחת בצפיות של סטורי ספציפי
+  @@unique([storyId, userId])
 }
