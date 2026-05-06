@@ -42,6 +42,7 @@ model User {
   notificationsSent     Notification[]       @relation("notificationsSent")
   notificationsReceived Notification[]       @relation("notificationsReceived")
   purchases             Purchase[]
+  rewardLogs            RewardLog[]
   shopItemsCreated      ShopItem[]           @relation("ShopItemsCreated")
   shopSuggestions       ShopSuggestion[]
   shopSuggestionVotes   ShopSuggestionVote[]
@@ -61,20 +62,23 @@ model Group {
   createdById       String
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
-  activityLogs      ActivityLog[]
-  albums            Album[]
-  bets              Bet[]
-  dictionaryEntries DictionaryEntry[]
-  entries           Entry[]
-  events            Event[]
-  createdBy         User               @relation("GroupCreator", fields: [createdById], references: [id])
-  joinRequests      GroupJoinRequest[]
-  memberships       GroupMembership[]
-  media             Media[]
-  notifications     Notification[]
-  shopItems         ShopItem[]
-  stories           Story[]
-  activeUsers       User[]             @relation("ActiveGroup")
+  activityLogs        ActivityLog[]
+  albums              Album[]
+  bets                Bet[]
+  coinTransactions    CoinTransaction[]
+  dictionaryEntries   DictionaryEntry[]
+  entries             Entry[]
+  events              Event[]
+  monthlyAchievements MonthlyAchievement[]
+  rewardLogs          RewardLog[]
+  createdBy           User               @relation("GroupCreator", fields: [createdById], references: [id])
+  joinRequests        GroupJoinRequest[]
+  memberships         GroupMembership[]
+  media               Media[]
+  notifications       Notification[]
+  shopItems           ShopItem[]
+  stories             Story[]
+  activeUsers         User[]             @relation("ActiveGroup")
 
   @@index([inviteCode])
   @@index([createdById])
@@ -432,34 +436,56 @@ model ActivityLog {
   @@index([groupId])
 }
 
-/// One record per user per achievement per month. Unique constraint prevents duplicate rewards.
+/// One record per user per achievement per month per group. Unique constraint prevents duplicate rewards.
 model MonthlyAchievement {
   id             String   @id @default(cuid())
   achievementKey String
   month          Int
   year           Int
   userId         String
+  groupId        String?
   rewardCoins    Int
   metricValue    Float?
   metricLabel    String?
   createdAt      DateTime @default(now())
+  group          Group?   @relation(fields: [groupId], references: [id])
   user           User     @relation(fields: [userId], references: [id])
 
-  @@unique([achievementKey, month, year, userId])
+  @@unique([achievementKey, month, year, userId, groupId])
   @@index([month, year])
   @@index([userId])
+  @@index([groupId])
 }
 
-/// Audit log for all TumbaCoin credits (achievement rewards, etc.)
+/// Audit log for all TumbaCoin credits and debits.
 model CoinTransaction {
   id        String   @id @default(cuid())
   userId    String
+  groupId   String?
   amount    Int
   reason    String
   createdAt DateTime @default(now())
+  group     Group?   @relation(fields: [groupId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
 
   @@index([userId, createdAt])
+  @@index([groupId])
+}
+
+/// Idempotency log for recurring rewards (join bonus, weekly allowance).
+model RewardLog {
+  id              String   @id @default(cuid())
+  userId          String
+  groupId         String
+  rewardType      String
+  periodStartDate DateTime
+  createdAt       DateTime @default(now())
+  group           Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId, rewardType, periodStartDate])
+  @@index([groupId])
+  @@index([userId])
 }
 
 model Story {

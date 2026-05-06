@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { awardJoinBonus } from "@/lib/weekly-allowance";
 
 export const dynamic = "force-dynamic";
 
@@ -117,6 +118,9 @@ export async function POST(req: Request) {
           },
         });
       });
+
+      // Award welcome bonus to newly approved member (idempotent)
+      await awardJoinBonus(joinRequest.userId, joinRequest.groupId, joinRequest.group.name);
 
       return NextResponse.json({ status: "approved" });
     } else {

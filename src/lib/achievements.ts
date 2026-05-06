@@ -1,20 +1,19 @@
 /**
  * TumbaNet — Monthly Achievements Engine
  *
- * Each month, run `runMonthlyAchievements(month, year)` to:
- *  1. Compute the winner(s) for every achievement from real DB data
+ * Each month, run `runMonthlyAchievementsForGroup(groupId, month, year)` to:
+ *  1. Compute the winner(s) for every achievement scoped to that group
  *  2. Create MonthlyAchievement records (duplicate-safe via unique constraint)
  *  3. Credit TumbaCoins to winners
  *  4. Log each award in CoinTransaction
  *
- * Tie handling: all tied users receive the full reward (generous, avoids
- * arbitrary tiebreaking).
- *
- * Minimum threshold: a user must have at least 1 qualifying activity to win
- * any positive achievement. Ghost is the exception (zero activity = win).
+ * Tie handling: all tied users receive the full reward.
+ * Minimum threshold: user must have ≥1 qualifying activity to win any positive achievement.
+ * Ghost is the exception (zero activity = win).
  */
 
 import { prisma } from "@/lib/prisma";
+import { awardCoins } from "@/lib/coins";
 
 // ── Achievement definitions ───────────────────────────────────────────────
 
@@ -23,7 +22,6 @@ export interface AchievementDef {
   name: string;
   description: string;
   rewardCoins: number;
-  /** Emoji used in the UI */
   icon: string;
 }
 
@@ -165,7 +163,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     key: "ghost",
     name: "Ghost",
     icon: "👻",
-    rewardCoins: 0,
+    rewardCoins: 1,
     description: "Awarded to the least active member this month. Where were you?",
   },
   {
@@ -198,7 +196,6 @@ interface Winner {
   metricLabel: string;
 }
 
-/** Returns all users tied for the top value. minVal prevents awarding on zero. */
 function topUsers(
   rows: { userId: string; val: number }[],
   makeLabel: (v: number) => string,
@@ -212,92 +209,92 @@ function topUsers(
     .map((r) => ({ userId: r.userId, metricValue: r.val, metricLabel: makeLabel(r.val) }));
 }
 
-// ── Individual achievement calculators ───────────────────────────────────
+// ── Individual achievement calculators (all group-scoped) ─────────────────
 
-async function calcDriverKing(s: Date, e: Date): Promise<Winner[]> {
+async function calcDriverKing(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const rows = await prisma.activityLog.groupBy({
     by: ["userId"],
-    where: { type: "CAR", createdAt: { gte: s, lt: e } },
+    where: { type: "CAR", groupId: gid, userId: { in: uids }, createdAt: { gte: s, lt: e } },
     _count: { id: true },
   });
   return topUsers(rows.map((r) => ({ userId: r.userId, val: r._count.id })), (v) => `${v} car ride${v !== 1 ? "s" : ""}`);
 }
 
-async function calcRoadWarrior(s: Date, e: Date): Promise<Winner[]> {
+async function calcRoadWarrior(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const rows = await prisma.activityLog.groupBy({
     by: ["userId"],
-    where: { type: "CAR", distanceKm: { not: null }, createdAt: { gte: s, lt: e } },
+    where: { type: "CAR", groupId: gid, userId: { in: uids }, distanceKm: { not: null }, createdAt: { gte: s, lt: e } },
     _sum: { distanceKm: true },
   });
   return topUsers(rows.map((r) => ({ userId: r.userId, val: r._sum.distanceKm ?? 0 })), (v) => `${v.toFixed(1)} km driven`);
 }
 
-async function calcUberTumba(s: Date, e: Date): Promise<Winner[]> {
+async function calcUberTumba(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const rows = await prisma.activityLog.groupBy({
     by: ["userId"],
-    where: { type: "CAR", passengerCount: { not: null }, createdAt: { gte: s, lt: e } },
+    where: { type: "CAR", groupId: gid, userId: { in: uids }, passengerCount: { not: null }, createdAt: { gte: s, lt: e } },
     _sum: { passengerCount: true },
   });
   return topUsers(rows.map((r) => ({ userId: r.userId, val: r._sum.passengerCount ?? 0 })), (v) => `${v} passenger${v !== 1 ? "s" : ""} carried`);
 }
 
-async function calcFullCarLegend(s: Date, e: Date): Promise<Winner[]> {
+async function calcFullCarLegend(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const rows = await prisma.activityLog.groupBy({
     by: ["userId"],
-    where: { type: "CAR", passengerCount: { gte: 5 }, createdAt: { gte: s, lt: e } },
+    where: { type: "CAR", groupId: gid, userId: { in: uids }, passengerCount: { gte: 5 }, createdAt: { gte: s, lt: e } },
     _count: { id: true },
   });
   return topUsers(rows.map((r) => ({ userId: r.userId, val: r._count.id })), (v) => `${v} full-car ride${v !== 1 ? "s" : ""}`);
 }
 
-async function calcHostMaster(s: Date, e: Date): Promise<Winner[]> {
+async function calcHostMaster(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const rows = await prisma.activityLog.groupBy({
     by: ["userId"],
-    where: { type: "HOST", createdAt: { gte: s, lt: e } },
+    where: { type: "HOST", groupId: gid, userId: { in: uids }, createdAt: { gte: s, lt: e } },
     _count: { id: true },
   });
   return topUsers(rows.map((r) => ({ userId: r.userId, val: r._count.id })), (v) => `${v} time${v !== 1 ? "s" : ""} hosted`);
 }
 
-async function calcOpenHouse(s: Date, e: Date): Promise<Winner[]> {
+async function calcOpenHouse(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const rows = await prisma.activityLog.groupBy({
     by: ["userId"],
-    where: { type: "HOST", attendeeCount: { not: null }, createdAt: { gte: s, lt: e } },
+    where: { type: "HOST", groupId: gid, userId: { in: uids }, attendeeCount: { not: null }, createdAt: { gte: s, lt: e } },
     _sum: { attendeeCount: true },
   });
   return topUsers(rows.map((r) => ({ userId: r.userId, val: r._sum.attendeeCount ?? 0 })), (v) => `${v} total attendee${v !== 1 ? "s" : ""} hosted`);
 }
 
-async function calcLastMinuteHero(s: Date, e: Date): Promise<Winner[]> {
+async function calcLastMinuteHero(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const rows = await prisma.activityLog.groupBy({
     by: ["userId"],
-    where: { type: "HOST", shortNotice: true, createdAt: { gte: s, lt: e } },
+    where: { type: "HOST", groupId: gid, userId: { in: uids }, shortNotice: true, createdAt: { gte: s, lt: e } },
     _count: { id: true },
   });
   return topUsers(rows.map((r) => ({ userId: r.userId, val: r._count.id })), (v) => `${v} short-notice hosting${v !== 1 ? "s" : ""}`);
 }
 
-async function calcContentCreator(s: Date, e: Date): Promise<Winner[]> {
+async function calcContentCreator(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const rows = await prisma.media.groupBy({
     by: ["userId"],
-    where: { createdAt: { gte: s, lt: e } },
+    where: { groupId: gid, userId: { in: uids }, createdAt: { gte: s, lt: e } },
     _count: { id: true },
   });
   return topUsers(rows.map((r) => ({ userId: r.userId, val: r._count.id })), (v) => `${v} upload${v !== 1 ? "s" : ""}`);
 }
 
-async function calcMemoryKeeper(s: Date, e: Date): Promise<Winner[]> {
+async function calcMemoryKeeper(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const rows = await prisma.entry.groupBy({
     by: ["userId"],
-    where: { createdAt: { gte: s, lt: e } },
+    where: { groupId: gid, userId: { in: uids }, createdAt: { gte: s, lt: e } },
     _count: { id: true },
   });
   return topUsers(rows.map((r) => ({ userId: r.userId, val: r._count.id })), (v) => `${v} highlight${v !== 1 ? "s" : ""}`);
 }
 
-async function calcStoryTeller(s: Date, e: Date): Promise<Winner[]> {
+async function calcStoryTeller(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const entries = await prisma.entry.findMany({
-    where: { createdAt: { gte: s, lt: e } },
+    where: { groupId: gid, userId: { in: uids }, createdAt: { gte: s, lt: e } },
     select: { userId: true, content: true },
   });
   const byUser: Record<string, number> = {};
@@ -305,55 +302,52 @@ async function calcStoryTeller(s: Date, e: Date): Promise<Winner[]> {
   return topUsers(Object.entries(byUser).map(([userId, val]) => ({ userId, val })), (v) => `${v} chars written`);
 }
 
-async function calcHighRoller(s: Date, e: Date): Promise<Winner[]> {
+async function calcHighRoller(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const rows = await prisma.wager.groupBy({
     by: ["userId"],
-    where: { createdAt: { gte: s, lt: e } },
+    where: { userId: { in: uids }, createdAt: { gte: s, lt: e }, betOption: { bet: { groupId: gid } } },
     _sum: { amount: true },
   });
   return topUsers(rows.map((r) => ({ userId: r.userId, val: r._sum.amount ?? 0 })), (v) => `${v} TC wagered`);
 }
 
-async function calcOracle(s: Date, e: Date): Promise<Winner[]> {
-  // Wagers placed this month where the chosen option was the winning one
+async function calcOracle(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const wagers = await prisma.wager.findMany({
-    where: { createdAt: { gte: s, lt: e }, payout: { not: null } },
+    where: { userId: { in: uids }, createdAt: { gte: s, lt: e }, payout: { not: null }, betOption: { bet: { groupId: gid } } },
     include: {
       betOption: { include: { bet: { select: { resolvedOptionId: true, status: true } } } },
     },
   });
   const wins = wagers.filter(
-    (w) =>
-      w.betOption.bet.status === "RESOLVED" &&
-      w.betOption.bet.resolvedOptionId === w.betOptionId,
+    (w) => w.betOption.bet.status === "RESOLVED" && w.betOption.bet.resolvedOptionId === w.betOptionId,
   );
   const byUser: Record<string, number> = {};
   for (const w of wins) byUser[w.userId] = (byUser[w.userId] ?? 0) + 1;
   return topUsers(Object.entries(byUser).map(([userId, val]) => ({ userId, val })), (v) => `${v} bet${v !== 1 ? "s" : ""} won`);
 }
 
-async function calcRiskTaker(s: Date, e: Date): Promise<Winner[]> {
+async function calcRiskTaker(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const rows = await prisma.wager.groupBy({
     by: ["userId"],
-    where: { createdAt: { gte: s, lt: e } },
+    where: { userId: { in: uids }, createdAt: { gte: s, lt: e }, betOption: { bet: { groupId: gid } } },
     _count: { id: true },
   });
   return topUsers(rows.map((r) => ({ userId: r.userId, val: r._count.id })), (v) => `${v} bet${v !== 1 ? "s" : ""} placed`);
 }
 
-async function calcBigSpender(s: Date, e: Date): Promise<Winner[]> {
+async function calcBigSpender(s: Date, e: Date, _gid: string, uids: string[]): Promise<Winner[]> {
+  // Purchase has no groupId — scope by member IDs only
   const rows = await prisma.purchase.groupBy({
     by: ["userId"],
-    where: { createdAt: { gte: s, lt: e } },
+    where: { userId: { in: uids }, createdAt: { gte: s, lt: e } },
     _sum: { price: true },
   });
   return topUsers(rows.map((r) => ({ userId: r.userId, val: r._sum.price ?? 0 })), (v) => `${v} TC spent in shop`);
 }
 
-async function calcCollector(s: Date, e: Date): Promise<Winner[]> {
-  // Proxy: sum of bet payouts received for wagers placed this month
+async function calcCollector(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const wagers = await prisma.wager.findMany({
-    where: { createdAt: { gte: s, lt: e }, payout: { gt: 0 } },
+    where: { userId: { in: uids }, createdAt: { gte: s, lt: e }, payout: { gt: 0 }, betOption: { bet: { groupId: gid } } },
     select: { userId: true, payout: true },
   });
   const byUser: Record<string, number> = {};
@@ -361,9 +355,9 @@ async function calcCollector(s: Date, e: Date): Promise<Winner[]> {
   return topUsers(Object.entries(byUser).map(([userId, val]) => ({ userId, val })), (v) => `${v} TC in payouts received`);
 }
 
-async function calcSocialBeast(s: Date, e: Date): Promise<Winner[]> {
+async function calcSocialBeast(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const rsvps = await prisma.eventRsvp.findMany({
-    where: { status: "GOING", event: { date: { gte: s, lt: e } } },
+    where: { userId: { in: uids }, status: "GOING", event: { date: { gte: s, lt: e }, groupId: gid } },
     select: { userId: true },
   });
   const byUser: Record<string, number> = {};
@@ -371,36 +365,38 @@ async function calcSocialBeast(s: Date, e: Date): Promise<Winner[]> {
   return topUsers(Object.entries(byUser).map(([userId, val]) => ({ userId, val })), (v) => `${v} event${v !== 1 ? "s" : ""} attended`);
 }
 
-async function calcOrganizer(s: Date, e: Date): Promise<Winner[]> {
+async function calcOrganizer(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const rows = await prisma.event.groupBy({
     by: ["userId"],
-    where: { createdAt: { gte: s, lt: e } },
+    where: { userId: { in: uids }, groupId: gid, createdAt: { gte: s, lt: e } },
     _count: { id: true },
   });
   return topUsers(rows.map((r) => ({ userId: r.userId, val: r._count.id })), (v) => `${v} event${v !== 1 ? "s" : ""} created`);
 }
 
-async function calcCommentKing(s: Date, e: Date): Promise<Winner[]> {
-  const comments = await prisma.dictionaryComment.groupBy({
-    by: ["userId"],
-    where: { createdAt: { gte: s, lt: e } },
-    _count: { id: true },
-  });
-  // EventPollVotes have no createdAt; count all-time as a secondary signal
-  const votes = await prisma.eventPollVote.groupBy({
-    by: ["userId"],
-    _count: { id: true },
-  });
+async function calcCommentKing(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
+  const [comments, votes] = await Promise.all([
+    prisma.dictionaryComment.groupBy({
+      by: ["userId"],
+      where: { userId: { in: uids }, createdAt: { gte: s, lt: e }, dictionaryEntry: { groupId: gid } },
+      _count: { id: true },
+    }),
+    // EventPollVote has no createdAt — scope by userId only as secondary signal
+    prisma.eventPollVote.groupBy({
+      by: ["userId"],
+      where: { userId: { in: uids } },
+      _count: { id: true },
+    }),
+  ]);
   const byUser: Record<string, number> = {};
-  for (const c of comments) byUser[c.userId] = (byUser[c.userId] ?? 0) + c._count.id * 2; // weight comments more
+  for (const c of comments) byUser[c.userId] = (byUser[c.userId] ?? 0) + c._count.id * 2;
   for (const v of votes) byUser[v.userId] = (byUser[v.userId] ?? 0) + v._count.id;
   return topUsers(Object.entries(byUser).map(([userId, val]) => ({ userId, val })), (v) => `${v} interactions`);
 }
 
-async function calcDramaCreator(s: Date, e: Date): Promise<Winner[]> {
-  // Most bets lost (placed a wager that was resolved against their chosen option)
+async function calcDramaCreator(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const wagers = await prisma.wager.findMany({
-    where: { createdAt: { gte: s, lt: e } },
+    where: { userId: { in: uids }, createdAt: { gte: s, lt: e }, betOption: { bet: { groupId: gid } } },
     include: {
       betOption: { include: { bet: { select: { resolvedOptionId: true, status: true } } } },
     },
@@ -416,23 +412,19 @@ async function calcDramaCreator(s: Date, e: Date): Promise<Winner[]> {
   return topUsers(Object.entries(byUser).map(([userId, val]) => ({ userId, val })), (v) => `${v} bet${v !== 1 ? "s" : ""} lost`);
 }
 
-async function calcGhost(s: Date, e: Date): Promise<Winner[]> {
-  // Least composite activity score across all tracked metrics
-  const allUsers = await prisma.user.findMany({
-    where: { createdAt: { lt: e } },
-    select: { id: true },
-  });
+async function calcGhost(s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
+  if (!uids.length) return [];
   const score: Record<string, number> = {};
-  for (const u of allUsers) score[u.id] = 0;
+  for (const id of uids) score[id] = 0;
 
   const [cars, hosts, entries, media, wagers, purchases, rsvps] = await Promise.all([
-    prisma.activityLog.groupBy({ by: ["userId"], where: { type: "CAR", createdAt: { gte: s, lt: e } }, _count: { id: true } }),
-    prisma.activityLog.groupBy({ by: ["userId"], where: { type: "HOST", createdAt: { gte: s, lt: e } }, _count: { id: true } }),
-    prisma.entry.groupBy({ by: ["userId"], where: { createdAt: { gte: s, lt: e } }, _count: { id: true } }),
-    prisma.media.groupBy({ by: ["userId"], where: { createdAt: { gte: s, lt: e } }, _count: { id: true } }),
-    prisma.wager.groupBy({ by: ["userId"], where: { createdAt: { gte: s, lt: e } }, _count: { id: true } }),
-    prisma.purchase.groupBy({ by: ["userId"], where: { createdAt: { gte: s, lt: e } }, _count: { id: true } }),
-    prisma.eventRsvp.findMany({ where: { status: "GOING", event: { date: { gte: s, lt: e } } }, select: { userId: true } }),
+    prisma.activityLog.groupBy({ by: ["userId"], where: { type: "CAR", groupId: gid, userId: { in: uids }, createdAt: { gte: s, lt: e } }, _count: { id: true } }),
+    prisma.activityLog.groupBy({ by: ["userId"], where: { type: "HOST", groupId: gid, userId: { in: uids }, createdAt: { gte: s, lt: e } }, _count: { id: true } }),
+    prisma.entry.groupBy({ by: ["userId"], where: { groupId: gid, userId: { in: uids }, createdAt: { gte: s, lt: e } }, _count: { id: true } }),
+    prisma.media.groupBy({ by: ["userId"], where: { groupId: gid, userId: { in: uids }, createdAt: { gte: s, lt: e } }, _count: { id: true } }),
+    prisma.wager.groupBy({ by: ["userId"], where: { userId: { in: uids }, createdAt: { gte: s, lt: e }, betOption: { bet: { groupId: gid } } }, _count: { id: true } }),
+    prisma.purchase.groupBy({ by: ["userId"], where: { userId: { in: uids }, createdAt: { gte: s, lt: e } }, _count: { id: true } }),
+    prisma.eventRsvp.findMany({ where: { userId: { in: uids }, status: "GOING", event: { date: { gte: s, lt: e }, groupId: gid } }, select: { userId: true } }),
   ]);
 
   for (const r of [...cars, ...hosts, ...entries, ...media, ...wagers, ...purchases]) {
@@ -440,14 +432,13 @@ async function calcGhost(s: Date, e: Date): Promise<Winner[]> {
   }
   for (const r of rsvps) score[r.userId] = (score[r.userId] ?? 0) + 1;
 
-  if (!Object.keys(score).length) return [];
   const min = Math.min(...Object.values(score));
   return Object.entries(score)
     .filter(([, v]) => v === min)
     .map(([userId, v]) => ({ userId, metricValue: v, metricLabel: `${v} total activities` }));
 }
 
-async function calcMostImproved(month: number, year: number, s: Date, e: Date): Promise<Winner[]> {
+async function calcMostImproved(month: number, year: number, s: Date, e: Date, gid: string, uids: string[]): Promise<Winner[]> {
   const prevMonth = month === 1 ? 12 : month - 1;
   const prevYear = month === 1 ? year - 1 : year;
   const ps = new Date(prevYear, prevMonth - 1, 1);
@@ -455,8 +446,8 @@ async function calcMostImproved(month: number, year: number, s: Date, e: Date): 
 
   async function wearScore(from: Date, to: Date): Promise<Record<string, number>> {
     const [hosts, cars] = await Promise.all([
-      prisma.activityLog.groupBy({ by: ["userId"], where: { type: "HOST", createdAt: { gte: from, lt: to } }, _count: { id: true } }),
-      prisma.activityLog.groupBy({ by: ["userId"], where: { type: "CAR", createdAt: { gte: from, lt: to } }, _count: { id: true } }),
+      prisma.activityLog.groupBy({ by: ["userId"], where: { type: "HOST", groupId: gid, userId: { in: uids }, createdAt: { gte: from, lt: to } }, _count: { id: true } }),
+      prisma.activityLog.groupBy({ by: ["userId"], where: { type: "CAR", groupId: gid, userId: { in: uids }, createdAt: { gte: from, lt: to } }, _count: { id: true } }),
     ]);
     const sc: Record<string, number> = {};
     for (const h of hosts) sc[h.userId] = (sc[h.userId] ?? 0) + h._count.id * 3;
@@ -474,49 +465,61 @@ async function calcMostImproved(month: number, year: number, s: Date, e: Date): 
   return topUsers(improvements, (v) => `+${v} wear index vs last month`);
 }
 
-// ── Main runner ───────────────────────────────────────────────────────────
+// ── Main runner (per group) ───────────────────────────────────────────────
 
 export interface AwardResult {
   achievementKey: string;
   achievementName: string;
   achievementIcon: string;
   userId: string;
+  groupId: string;
   rewardCoins: number;
   metricValue?: number;
   metricLabel?: string;
   alreadyAwarded: boolean;
 }
 
-export async function runMonthlyAchievements(
+export async function runMonthlyAchievementsForGroup(
+  groupId: string,
   month: number,
   year: number,
 ): Promise<{ results: AwardResult[]; newCount: number; totalCoins: number; summary: string }> {
   const s = new Date(year, month - 1, 1);
   const e = new Date(year, month, 1);
 
+  const memberships = await prisma.groupMembership.findMany({
+    where: { groupId },
+    select: { userId: true },
+  });
+  const memberIds = memberships.map((m) => m.userId);
+
+  if (!memberIds.length) {
+    return { results: [], newCount: 0, totalCoins: 0, summary: "No members in group." };
+  }
+
   type Calc = () => Promise<Winner[]>;
   const calculators: Record<string, Calc> = {
-    driver_king:      () => calcDriverKing(s, e),
-    road_warrior:     () => calcRoadWarrior(s, e),
-    uber_tumba:       () => calcUberTumba(s, e),
-    full_car_legend:  () => calcFullCarLegend(s, e),
-    host_master:      () => calcHostMaster(s, e),
-    open_house:       () => calcOpenHouse(s, e),
-    last_minute_hero: () => calcLastMinuteHero(s, e),
-    content_creator:  () => calcContentCreator(s, e),
-    memory_keeper:    () => calcMemoryKeeper(s, e),
-    story_teller:     () => calcStoryTeller(s, e),
-    high_roller:      () => calcHighRoller(s, e),
-    oracle:           () => calcOracle(s, e),
-    risk_taker:       () => calcRiskTaker(s, e),
-    big_spender:      () => calcBigSpender(s, e),
-    collector:        () => calcCollector(s, e),
-    social_beast:     () => calcSocialBeast(s, e),
-    organizer:        () => calcOrganizer(s, e),
-    comment_king:     () => calcCommentKing(s, e),
-    drama_creator:    () => calcDramaCreator(s, e),
-    ghost:            () => calcGhost(s, e),
-    most_improved:    () => calcMostImproved(month, year, s, e),
+    driver_king:      () => calcDriverKing(s, e, groupId, memberIds),
+    road_warrior:     () => calcRoadWarrior(s, e, groupId, memberIds),
+    uber_tumba:       () => calcUberTumba(s, e, groupId, memberIds),
+    full_car_legend:  () => calcFullCarLegend(s, e, groupId, memberIds),
+    host_master:      () => calcHostMaster(s, e, groupId, memberIds),
+    open_house:       () => calcOpenHouse(s, e, groupId, memberIds),
+    last_minute_hero: () => calcLastMinuteHero(s, e, groupId, memberIds),
+    content_creator:  () => calcContentCreator(s, e, groupId, memberIds),
+    memory_keeper:    () => calcMemoryKeeper(s, e, groupId, memberIds),
+    story_teller:     () => calcStoryTeller(s, e, groupId, memberIds),
+    high_roller:      () => calcHighRoller(s, e, groupId, memberIds),
+    oracle:           () => calcOracle(s, e, groupId, memberIds),
+    risk_taker:       () => calcRiskTaker(s, e, groupId, memberIds),
+    big_spender:      () => calcBigSpender(s, e, groupId, memberIds),
+    collector:        () => calcCollector(s, e, groupId, memberIds),
+    social_beast:     () => calcSocialBeast(s, e, groupId, memberIds),
+    organizer:        () => calcOrganizer(s, e, groupId, memberIds),
+    comment_king:     () => calcCommentKing(s, e, groupId, memberIds),
+    drama_creator:    () => calcDramaCreator(s, e, groupId, memberIds),
+    ghost:            () => calcGhost(s, e, groupId, memberIds),
+    most_improved:    () => calcMostImproved(month, year, s, e, groupId, memberIds),
   };
 
   const results: AwardResult[] = [];
@@ -531,19 +534,19 @@ export async function runMonthlyAchievements(
     try {
       winners = await calc();
     } catch (err) {
-      console.error(`[achievements] Calc error for ${def.key}:`, err);
+      console.error(`[achievements] Calc error for ${def.key} in group ${groupId}:`, err);
       continue;
     }
 
     for (const w of winners) {
-      // Idempotency check
       const existing = await prisma.monthlyAchievement.findUnique({
         where: {
-          achievementKey_month_year_userId: {
+          achievementKey_month_year_userId_groupId: {
             achievementKey: def.key,
             month,
             year,
             userId: w.userId,
+            groupId,
           },
         },
       });
@@ -554,6 +557,7 @@ export async function runMonthlyAchievements(
           achievementName: def.name,
           achievementIcon: def.icon,
           userId: w.userId,
+          groupId,
           rewardCoins: def.rewardCoins,
           metricValue: w.metricValue,
           metricLabel: w.metricLabel,
@@ -562,7 +566,6 @@ export async function runMonthlyAchievements(
         continue;
       }
 
-      // Create record + award coins atomically
       await prisma.$transaction(async (tx) => {
         await tx.monthlyAchievement.create({
           data: {
@@ -570,6 +573,7 @@ export async function runMonthlyAchievements(
             month,
             year,
             userId: w.userId,
+            groupId,
             rewardCoins: def.rewardCoins,
             metricValue: w.metricValue,
             metricLabel: w.metricLabel,
@@ -577,17 +581,13 @@ export async function runMonthlyAchievements(
         });
 
         if (def.rewardCoins > 0) {
-          await tx.user.update({
-            where: { id: w.userId },
-            data: { tumbaCoins: { increment: def.rewardCoins } },
-          });
-          await tx.coinTransaction.create({
-            data: {
-              userId: w.userId,
-              amount: def.rewardCoins,
-              reason: `Monthly Achievement: ${def.name} — ${getMonthName(month)} ${year}`,
-            },
-          });
+          await awardCoins(
+            tx,
+            w.userId,
+            def.rewardCoins,
+            `Monthly Achievement: ${def.name} — ${getMonthName(month)} ${year}`,
+            groupId,
+          );
         }
       });
 
@@ -598,6 +598,7 @@ export async function runMonthlyAchievements(
         achievementName: def.name,
         achievementIcon: def.icon,
         userId: w.userId,
+        groupId,
         rewardCoins: def.rewardCoins,
         metricValue: w.metricValue,
         metricLabel: w.metricLabel,
@@ -608,8 +609,36 @@ export async function runMonthlyAchievements(
 
   const label = `${getMonthName(month)} ${year}`;
   const summary =
-    `Processed ${ACHIEVEMENT_DEFS.length} achievements for ${label}. ` +
+    `[group:${groupId}] Processed ${ACHIEVEMENT_DEFS.length} achievements for ${label}. ` +
     `Awarded ${newCount} new prize${newCount !== 1 ? "s" : ""} totalling ${totalCoins} TC.`;
 
   return { results, newCount, totalCoins, summary };
+}
+
+/** Run achievements for ALL groups. Used by the monthly cron job. */
+export async function runMonthlyAchievements(
+  month: number,
+  year: number,
+): Promise<{ groupResults: { groupId: string; newCount: number; totalCoins: number }[]; grandTotalCoins: number; summary: string }> {
+  const groups = await prisma.group.findMany({ select: { id: true } });
+  const groupResults: { groupId: string; newCount: number; totalCoins: number }[] = [];
+  let grandTotalCoins = 0;
+
+  for (const g of groups) {
+    try {
+      const res = await runMonthlyAchievementsForGroup(g.id, month, year);
+      groupResults.push({ groupId: g.id, newCount: res.newCount, totalCoins: res.totalCoins });
+      grandTotalCoins += res.totalCoins;
+      console.log(`[achievements] ${res.summary}`);
+    } catch (err) {
+      console.error(`[achievements] Error processing group ${g.id}:`, err);
+    }
+  }
+
+  const label = `${getMonthName(month)} ${year}`;
+  const summary =
+    `Monthly achievements for ${label}: processed ${groups.length} group${groups.length !== 1 ? "s" : ""}, ` +
+    `awarded ${grandTotalCoins} TC total.`;
+
+  return { groupResults, grandTotalCoins, summary };
 }

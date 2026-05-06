@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
 import { CoinAmountLg } from "@/components/TumbaCoin";
+import WalletPanel from "@/components/WalletPanel";
 import {
   TumbasIcon,
   HighlightsIcon,
@@ -204,6 +205,9 @@ export default function ProfilePage() {
           </div>
         ))}
       </div>
+
+      {/* Wallet — balance, achievements, transactions */}
+      <WalletPanel userId={profileId} />
     </div>
   );
 }

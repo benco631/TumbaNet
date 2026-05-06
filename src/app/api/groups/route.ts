@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { nanoid } from "@/lib/utils";
+import { awardJoinBonus } from "@/lib/weekly-allowance";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,9 @@ export async function POST(req: Request) {
 
       return newGroup;
     });
+
+    // Award welcome bonus to group creator (idempotent)
+    await awardJoinBonus(userId, group.id, group.name);
 
     return NextResponse.json(group, { status: 201 });
   } catch (err) {
