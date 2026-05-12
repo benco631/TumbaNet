@@ -66,5 +66,5 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   // הרשימה הזו אומרת ל-Middleware על אילו עמודים לא לרוץ (תמונות, קבצי מערכת וכו')
-  matcher: ["/((?!_next|favicon.ico|uploads|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|txt)).*)"],
+  matcher: ["/((?!_next|favicon.ico|uploads|.*\\.(?:png|jpg|jpeg|gif|webp|svg|sw\\.js|manifest\\.json|ico|txt)).*)"],
 };
