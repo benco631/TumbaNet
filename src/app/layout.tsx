@@ -6,6 +6,7 @@ import GroupProvider from "@/components/GroupProvider";
 import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import GroupGate from "@/components/GroupGate";
+import ServiceWorkerRegistry from "@/components/ServiceWorkerRegistry";
 
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"] });
 
@@ -39,6 +40,8 @@ export const metadata: Metadata = {
   },
 };
 
+
+
 export default function RootLayout({
   children,
 }: {
@@ -47,6 +50,7 @@ export default function RootLayout({
   return (
     <html lang="he" dir="ltr">
       <body className={spaceGrotesk.className}>
+      <ServiceWorkerRegistry />
         <AuthProvider>
           <GroupProvider>
             <GroupGate>

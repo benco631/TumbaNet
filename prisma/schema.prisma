@@ -50,18 +50,19 @@ model User {
   storyViews            StoryView[]
   activeGroup           Group?               @relation("ActiveGroup", fields: [activeGroupId], references: [id])
   wagers                Wager[]
+  subscriptions         PushSubscription[]
 }
 
 model Group {
-  id                String             @id @default(cuid())
-  name              String
-  description       String?
-  avatar            String?
-  privacy           String             @default("OPEN")
-  inviteCode        String             @unique
-  createdById       String
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  id                  String               @id @default(cuid())
+  name                String
+  description         String?
+  avatar              String?
+  privacy             String               @default("OPEN")
+  inviteCode          String               @unique
+  createdById         String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
   activityLogs        ActivityLog[]
   albums              Album[]
   bets                Bet[]
@@ -71,14 +72,14 @@ model Group {
   events              Event[]
   monthlyAchievements MonthlyAchievement[]
   rewardLogs          RewardLog[]
-  createdBy           User               @relation("GroupCreator", fields: [createdById], references: [id])
+  createdBy           User                 @relation("GroupCreator", fields: [createdById], references: [id])
   joinRequests        GroupJoinRequest[]
   memberships         GroupMembership[]
   media               Media[]
   notifications       Notification[]
   shopItems           ShopItem[]
   stories             Story[]
-  activeUsers         User[]             @relation("ActiveGroup")
+  activeUsers         User[]               @relation("ActiveGroup")
 
   @@index([inviteCode])
   @@index([createdById])
@@ -515,4 +516,14 @@ model StoryView {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([storyId, userId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }

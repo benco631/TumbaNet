@@ -27,6 +27,7 @@ import StoryTray from "@/components/StoryTray";
 import HomeFeed from "@/components/HomeFeed";
 import ActivityReportModal from "@/components/ActivityReportModal";
 import ActivityTicker from "@/components/ActivityTicker";
+import EnableNotifications from "@/components/EnableNotifications";
 
 // --- Types ---
 interface WearEntry {
@@ -236,6 +237,8 @@ if (error) {
 
       {/* ── 0) STORIES TRAY ── */}
     <StoryTray />
+
+    <EnableNotifications />
 
       {/* ── 1) HERO PROFILE CARD ── */}
       <motion.div
