@@ -25,34 +25,48 @@ export default function EnableNotifications() {
   }, []);
 
   const subscribeUser = async () => {
+    // 1. האם יש תמיכה בכלל?
     if (!("serviceWorker" in navigator)) {
-      console.error("Browser does not support background notifications.");
+      alert("Debug: Browser does not support service workers.");
       return;
     }
 
     setIsLoading(true);
 
     try {
+      // 2. מבקשים הרשאה
       const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        setIsLoading(false);
-        return;
-      }
-
-      const registration = await navigator.serviceWorker.ready;
-      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       
-      if (!vapidPublicKey) {
-        console.error("Missing VAPID Public Key");
+      // החשוד המרכזי בדרך כלל נופל פה!
+      if (permission !== "granted") {
+        alert(`Debug: Permission is currently '${permission}'. You need to reset site settings in your phone's browser.`);
         setIsLoading(false);
         return;
       }
 
+      // 3. מחכים ל-Service Worker שיהיה מוכן
+      const registration = await navigator.serviceWorker.ready;
+      if (!registration) {
+        alert("Debug: Service worker registration is missing or hanging.");
+        setIsLoading(false);
+        return;
+      }
+
+      // 4. מוודאים שיש מפתח ב-Vercel
+      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidPublicKey) {
+        alert("Debug: VAPID Public Key is missing! Check Vercel Environment Variables.");
+        setIsLoading(false);
+        return;
+      }
+
+      // 5. מייצרים את המנוי
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
 
+      // 6. שולחים לשרת
       const response = await fetch("/api/notifications/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,12 +74,15 @@ export default function EnableNotifications() {
       });
 
       if (response.ok) {
-        setIsSubscribed(true); // זה יעלים את הקומפוננטה
+        alert("Debug: Success! Server returned 200 OK.");
+        setIsSubscribed(true);
       } else {
-        console.error("Failed to save subscription");
+        const errorText = await response.text();
+        alert(`Debug: Server Error ${response.status} - ${errorText}`);
       }
-    } catch (error) {
-      console.error("Error subscribing:", error);
+    } catch (error: any) {
+      // אם יש קריסה מוחלטת
+      alert(`Debug: Caught an exception: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
