@@ -19,54 +19,43 @@ export default function EnableNotifications() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    // בודקים אם יש כבר אישור התראות במערכת כדי להסתיר את הבאנר מראש
     if ("Notification" in window && Notification.permission === "granted") {
       setIsSubscribed(true);
     }
   }, []);
 
   const subscribeUser = async () => {
-    // 1. האם יש תמיכה בכלל?
-    if (!("serviceWorker" in navigator)) {
-      alert("Debug: Browser does not support service workers.");
-      return;
-    }
+    // יציאה שקטה אם אין תמיכה בדפדפן
+    if (!("serviceWorker" in navigator)) return;
 
     setIsLoading(true);
 
     try {
-      // 2. מבקשים הרשאה
       const permission = await Notification.requestPermission();
-      
-      // החשוד המרכזי בדרך כלל נופל פה!
       if (permission !== "granted") {
-        alert(`Debug: Permission is currently '${permission}'. You need to reset site settings in your phone's browser.`);
         setIsLoading(false);
-        return;
+        return; // יציאה שקטה אם המשתמש סירב
       }
 
-      // 3. מחכים ל-Service Worker שיהיה מוכן
       const registration = await navigator.serviceWorker.ready;
       if (!registration) {
-        alert("Debug: Service worker registration is missing or hanging.");
         setIsLoading(false);
         return;
       }
 
-      // 4. מוודאים שיש מפתח ב-Vercel
       const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidPublicKey) {
-        alert("Debug: VAPID Public Key is missing! Check Vercel Environment Variables.");
+        console.error("Missing VAPID Public Key");
         setIsLoading(false);
         return;
       }
 
-      // 5. מייצרים את המנוי
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
 
-      // 6. שולחים לשרת
       const response = await fetch("/api/notifications/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,16 +63,13 @@ export default function EnableNotifications() {
       });
 
       if (response.ok) {
-        alert("Debug: Success! Server returned 200 OK.");
+        // הצלחה! מעלימים את הבאנר בצורה חלקה
         setIsSubscribed(true);
       } else {
-        const errorText = await response.text();
-        alert(`Debug: Server Error ${response.status} - ${errorText}`);
+        console.error("Failed to save subscription to database");
       }
     } catch (error) {
-      // המרה בטוחה לשגיאה כדי לרצות את ה-Linter בלי להשתמש ב-any
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      alert(`Debug: Caught an exception: ${errorMessage}`);
+      console.error("Error during push subscription:", error);
     } finally {
       setIsLoading(false);
     }

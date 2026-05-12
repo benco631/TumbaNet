@@ -4,16 +4,14 @@ self.addEventListener('push', function (event) {
     
     const options = {
       body: data.message,
-      // אם אין לכם עדיין אייקונים, זה יעבוד גם בלי, אבל כדאי להוסיף תמונה קטנה של האפליקציה בהמשך
-      icon: '/icon-192.png', 
-      badge: '/icon-192.png',
-      vibrate: [100, 50, 100], // הרטט בטלפון
+      icon: '/icon.png',   // האייקון הראשי המעוצב שלך
+      badge: '/badge.png', // האייקון השקוף לשורת הסטטוס
+      vibrate: [200, 100, 200],
       data: {
-        url: data.targetUrl || '/' // לאן להעביר כשלוחצים על ההתראה
+        url: data.targetUrl || '/' 
       }
     };
 
-    // מקפיץ את ההתראה המובנית של מערכת ההפעלה
     event.waitUntil(
       self.registration.showNotification(data.title, options)
     );
