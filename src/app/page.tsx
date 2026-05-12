@@ -25,6 +25,8 @@ import { CoinAmountSm } from "@/components/TumbaCoin";
 import EmptyState from "@/components/EmptyState";
 import StoryTray from "@/components/StoryTray";
 import HomeFeed from "@/components/HomeFeed";
+import ActivityReportModal from "@/components/ActivityReportModal";
+import ActivityTicker from "@/components/ActivityTicker";
 
 // --- Types ---
 interface WearEntry {
@@ -257,6 +259,7 @@ if (error) {
               isSquare={true} 
               className="h-[84px] w-[84px] text-3xl shadow-lg shadow-tumba-500/25" 
             />
+            
             {myRank === 0 && (
               <div className="absolute -top-3 -right-2 bg-yellow-400/90 rounded-full p-1 shadow-sm">
                 <CrownIcon size={12} strokeWidth={2} className="text-black" />
@@ -319,6 +322,7 @@ if (error) {
             </p>
           </div>
         </div>
+        <ActivityReportModal />
       </motion.div>
 
       {/* ── 2) GROUP OVERVIEW ── */}
@@ -357,6 +361,8 @@ if (error) {
         </MotionStagger>
       </div>
 
+      <ActivityTicker />
+
       <HomeFeed />
 
       {/* ── 4) QUICK ACCESS ── */}
@@ -382,6 +388,7 @@ if (error) {
           })}
         </MotionStagger>
       </div>
+
     </MotionPage>
   );
 }

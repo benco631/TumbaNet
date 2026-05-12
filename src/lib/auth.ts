@@ -33,23 +33,26 @@ export const authOptions: NextAuthOptions = {
         try {
           // Verify the Firebase ID token using firebase-admin
           const decodedToken = await firebaseAdmin.verifyIdToken(credentials.token);
-          const firebaseUid = decodedToken.uid;
+          
+          if (!decodedToken.email) {
+            throw new Error("Token does not contain an email address");
+          }
 
-          // Fetch or create user in Prisma
-          let user = await prisma.user.findUnique({
-            where: { firebaseUid },
+          // Fetch user in Prisma by email (הכי בטוח ומונע שגיאות כפילות)
+          const user = await prisma.user.findUnique({
+            where: { email: decodedToken.email },
           });
 
           if (!user) {
-            // This shouldn't happen in normal flow (register creates the user first)
-            // but as a fallback, create a minimal user profile
-            user = await prisma.user.create({
-              data: {
-                firebaseUid,
-                email: decodedToken.email || "",
-                name: decodedToken.name || "Tumba",
-                tumbaCoins: 100,
-              },
+            // במקום ליצור משתמש חדש ולהקריס את השרת, אנחנו פשוט זורקים שגיאה
+            throw new Error("User not found");
+          }
+
+          // סנכרון: אם זה יוזר מטסטים ישנים שאין לו עדיין את ה-UID של פיירבייס, נעדכן לו אותו
+          if (!user.firebaseUid) {
+            await prisma.user.update({
+              where: { email: user.email },
+              data: { firebaseUid: decodedToken.uid },
             });
           }
 
