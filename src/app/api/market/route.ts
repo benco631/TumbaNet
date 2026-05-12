@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notifyAllUsers } from "@/lib/notifications";
 
+
 export const dynamic = "force-dynamic";
 
 // GET all bets
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
   });
 
   // Fire-and-forget notification
-  notifyAllUsers({
+  await notifyAllUsers({
     actorId: userId,
     actorName: bet.user.name,
     type: "BET",

@@ -95,7 +95,7 @@ export async function POST(req: Request) {
     },
   });
 
-  notifyAllUsers({
+  await notifyAllUsers({
     actorId: ctx.userId,
     actorName: event.user.name,
     type: "EVENT",

@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     include: { user: { select: { id: true, name: true } } },
   });
 
-  notifyAllUsers({
+  await notifyAllUsers({
     actorId: userId,
     actorName: entry.user.name,
     type: "HIGHLIGHT",
