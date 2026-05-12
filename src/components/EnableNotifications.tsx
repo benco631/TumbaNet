@@ -80,9 +80,10 @@ export default function EnableNotifications() {
         const errorText = await response.text();
         alert(`Debug: Server Error ${response.status} - ${errorText}`);
       }
-    } catch (error: any) {
-      // אם יש קריסה מוחלטת
-      alert(`Debug: Caught an exception: ${error.message}`);
+    } catch (error) {
+      // המרה בטוחה לשגיאה כדי לרצות את ה-Linter בלי להשתמש ב-any
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      alert(`Debug: Caught an exception: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
