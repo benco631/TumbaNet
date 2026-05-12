@@ -80,12 +80,15 @@ export async function notifyAllUsers(params: CreateNotificationParams) {
           },
           payload
         );
-      } catch (error: any) {
+      } catch (error) {
+        // המרה זהירה ותקנית לסוג השגיאה ש-web-push מחזיר
+        const pushError = error as webpush.WebPushError;
+        
         // אם גוגל/אפל אומרים לנו שהמנוי כבר לא בתוקף (למשל המשתמש ביטל התראות בטלפון)
-        if (error.statusCode === 410 || error.statusCode === 404) {
+        if (pushError.statusCode === 410 || pushError.statusCode === 404) {
           await prisma.pushSubscription.delete({ where: { id: sub.id } });
         } else {
-          console.error("Push notification error:", error);
+          console.error("Push notification error:", pushError);
         }
       }
     });
