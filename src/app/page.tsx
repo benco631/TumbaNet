@@ -157,12 +157,12 @@ export default function Home() {
     if (session) fetchData();
   }, [session, fetchData]);
 
-  // ── שלב 1: בזמן ש-NextAuth בודק אם אתה מחובר, או שהנתונים נטענים ──
-  if (status === "loading" || (session && isLoading)) {
+  // ── שלב 1: טעינה ראשונית בלבד (NextAuth בודק את זהות המשתמש) ──
+  if (status === "loading") {
     return <SplashScreen />;
   }
 
-  // ── שלב 2: אם אתה לא מחובר, מציגים את העיצוב המקורי שלך למנותקים ──
+  // ── שלב 2: אם אתה לא מחובר, מציגים את עמוד הפתיחה ──
   if (status === "unauthenticated" || !session) {
     return (
       <MotionPage className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] bg-mesh px-4">
@@ -175,6 +175,16 @@ export default function Home() {
              <Link href="/register" className="btn-secondary">Join</Link>
           </motion.div>
         </div>
+      </MotionPage>
+    );
+  }
+
+  // ── שלב 3: טעינת נתונים פנימית (קורה כשחוזרים לעמוד הבית מעמוד אחר) ──
+  if (isLoading) {
+    return (
+      <MotionPage className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] bg-mesh">
+        {/* ספינר טעינה עדין בצבעי האפליקציה במקום מסך שחור מלא */}
+        <div className="w-10 h-10 border-4 border-tumba-500/20 border-t-tumba-400 rounded-full animate-spin drop-shadow-[0_0_10px_rgba(192,38,211,0.5)]" />
       </MotionPage>
     );
   }
