@@ -43,7 +43,10 @@ export async function POST(req: Request) {
     }
 
     // 4. העברת הכספים ויצירת התראה ממוקדת
-    await prisma.$transaction(async (tx) => {
+  // ... (הקוד שלפני הטרנזקציה נשאר אותו דבר)
+
+    // 4. העברת הכספים נטו - אנחנו שומרים את מה שהטרנזקציה מחזירה!
+    const senderNameForPush = await prisma.$transaction(async (tx) => {
       const sender = await tx.user.findUnique({
         where: { id: senderId },
         select: { tumbaCoins: true, name: true },
@@ -51,8 +54,6 @@ export async function POST(req: Request) {
 
       if (!sender) throw new Error("Sender not found");
       if (sender.tumbaCoins < amount) throw new Error("Insufficient TumbaCoins balance");
-
-      senderNameForPush = sender.name || "A friend";
 
       // הורדת מטבעות מהשולח
       await tx.user.update({
@@ -66,11 +67,11 @@ export async function POST(req: Request) {
         data: { tumbaCoins: { increment: amount } },
       });
       
-      // מחקנו מכאן את ה-tx.notification.create!
+      // הטרנזקציה מחזירה החוצה את השם של השולח כדי שנוכל להשתמש בו בבטחה
+      return sender.name || "A friend";
     });
 
     // 5. אחרי שהכסף עבר בטוח, יורים את הפוש לחבר!
-    // חשוב שזה יהיה מחוץ לטרנזקציה כדי שלא יעכב אותה
     try {
       await notifySingleUser(recipientId, {
         actorId: senderId,
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, message: "Transfer completed" }, { status: 200 });
-
+    
   } catch (error) {
     console.error("Transfer error:", error);
     // המרה בטוחה בלי any
