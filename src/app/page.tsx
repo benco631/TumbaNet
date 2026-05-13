@@ -28,6 +28,7 @@ import HomeFeed from "@/components/HomeFeed";
 import ActivityReportModal from "@/components/ActivityReportModal";
 import ActivityTicker from "@/components/ActivityTicker";
 import EnableNotifications from "@/components/EnableNotifications";
+import TransferCoinsModal from "@/components/TransferCoinsModal";
 
 // --- Types ---
 interface WearEntry {
@@ -325,9 +326,16 @@ if (error) {
             </p>
           </div>
         </div>
-        <ActivityReportModal />
-      </motion.div>
-
+        <div className="relative flex w-full gap-3 mt-4">
+          <div className="flex-1">
+            <ActivityReportModal />
+          </div>
+          <div className="flex-1">
+            <TransferCoinsModal users={users.filter(u => u.id !== userId)} />
+          </div>
+        </div>
+      </motion.div> {/* סגירת ה-Hero Card */}
+      
       {/* ── 2) GROUP OVERVIEW ── */}
       <div>
         <div className="flex items-baseline gap-2 mb-3">

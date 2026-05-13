@@ -64,12 +64,11 @@ export default function ActivityReportModal() {
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setIsOpen(true)}
-        className="w-full mt-4 py-3 bg-tumba-500/10 hover:bg-tumba-500/20 border border-tumba-500/20 rounded-xl flex items-center justify-center gap-2 text-sm font-extrabold text-tumba-300 transition-colors relative z-10"
+        className="w-full py-3 bg-tumba-500/10 hover:bg-tumba-500/20 border border-tumba-500/20 rounded-xl flex items-center justify-center gap-2 text-sm font-extrabold text-tumba-300 transition-colors relative z-10"
       >
         <Plus size={18} strokeWidth={2.5} />
         Report Activity
       </motion.button>
-
       {/* Modal */}
       <AnimatePresence>
         {isOpen && (

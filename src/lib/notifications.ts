@@ -8,7 +8,7 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY as string
 );
 
-type NotificationType = "BET" | "EVENT" | "HIGHLIGHT";
+type NotificationType = "BET" | "EVENT" | "HIGHLIGHT" | "TRANSFER";
 
 interface CreateNotificationParams {
   actorId: string;
@@ -22,9 +22,10 @@ interface CreateNotificationParams {
 export async function notifyAllUsers(params: CreateNotificationParams) {
   const { actorId, actorName, type, message, targetUrl, groupId } = params;
 
-  let recipientIds: string[];
+  // התיקון לאדום: אתחול המערך עם ערך דיפולטיבי ריק
+  let recipientIds: string[] = [];
 
-  // 1. חילוץ הנמענים (בדיוק כמו שהיה לך)
+  // 1. חילוץ הנמענים
   if (groupId) {
     const members = await prisma.groupMembership.findMany({
       where: { groupId, userId: { not: actorId } },
@@ -41,7 +42,7 @@ export async function notifyAllUsers(params: CreateNotificationParams) {
 
   if (recipientIds.length === 0) return;
 
-  // 2. שמירת ההתראות בתוך האפליקציה (בדיוק כמו שהיה לך)
+  // 2. שמירת ההתראות בתוך האפליקציה
   await prisma.notification.createMany({
     data: recipientIds.map((recipientId) => ({
       recipientId,
@@ -60,9 +61,30 @@ export async function notifyAllUsers(params: CreateNotificationParams) {
       where: { userId: { in: recipientIds } },
     });
 
+    if (subscriptions.length === 0) return;
+
+    // לוגיקה לבחירת כותרת דינמית לפי סוג ההתראה
+    let notificationTitle = "New Update";
+    
+    switch (type) {
+      case "BET":
+        notificationTitle = `New Bet by ${actorName}`;
+        break;
+      case "EVENT":
+        notificationTitle = `New Event: ${actorName} invited you`;
+        break;
+      case "HIGHLIGHT":
+        notificationTitle = `New Highlight from ${actorName}`;
+        break;
+      case "TRANSFER": // <--- הקייס החדש שהוספנו
+        notificationTitle = `TumbaCoins Received!`; 
+      default:
+        notificationTitle = `Update from ${actorName}`;
+    }
+
     // הכנת המידע שיישלח לטלפון
     const payload = JSON.stringify({
-      title: `Update from ${actorName}`,
+      title: notificationTitle,
       message: message,
       targetUrl: targetUrl || "/",
     });
@@ -84,7 +106,7 @@ export async function notifyAllUsers(params: CreateNotificationParams) {
         // המרה זהירה ותקנית לסוג השגיאה ש-web-push מחזיר
         const pushError = error as webpush.WebPushError;
         
-        // אם גוגל/אפל אומרים לנו שהמנוי כבר לא בתוקף (למשל המשתמש ביטל התראות בטלפון)
+        // אם גוגל/אפל אומרים לנו שהמנוי כבר לא בתוקף
         if (pushError.statusCode === 410 || pushError.statusCode === 404) {
           await prisma.pushSubscription.delete({ where: { id: sub.id } });
         } else {
