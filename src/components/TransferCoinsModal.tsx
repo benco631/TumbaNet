@@ -59,8 +59,10 @@ export default function TransferCoinsModal({ users }: { users: UserData[] }) {
       setAmount("");
       setSelectedUserId("");
       window.location.reload(); 
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      // המרה בטוחה במקום any
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -77,10 +77,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, message: "Transfer completed" }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("Transfer error:", error);
+    // המרה בטוחה בלי any
+    const errorMessage = error instanceof Error ? error.message : "An error occurred during transfer";
     return NextResponse.json(
-      { error: error.message || "An error occurred during transfer" },
+      { error: errorMessage },
       { status: 500 }
     );
   }
