@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { MotionPage, MotionStagger, MotionItem, MotionCard } from "@/components/motion";
 import {
   HighlightsIcon,
@@ -29,6 +29,7 @@ import ActivityReportModal from "@/components/ActivityReportModal";
 import ActivityTicker from "@/components/ActivityTicker";
 import EnableNotifications from "@/components/EnableNotifications";
 import TransferCoinsModal from "@/components/TransferCoinsModal";
+import SplashScreen from "@/components/SplashScreen";
 
 // --- Types ---
 interface WearEntry {
@@ -49,7 +50,7 @@ interface ActivityStats {
 interface UserData {
   id: string;
   name: string;
-  avatar: string | null; // ← וידאנו שקיים בטייפ
+  avatar: string | null;
   tumbaCoins: number;
   status: string | null;
   createdAt: string;
@@ -64,7 +65,6 @@ const QUICK_ACCESS: { icon: LucideIcon; label: string; href: string }[] = [
   { icon: ShopIcon,       label: "Shop",       href: "/shop"       },
   { icon: AlbumIcon,      label: "Album",      href: "/album"      },
 ];
-
 
 // --- Helper Components ---
 
@@ -94,7 +94,6 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
-// קומפוננטת Avatar חכמה שיודעת להתמודד עם תמונות או ליפול לאות ראשונה
 function UserAvatar({ name, avatarUrl, className = "", isSquare = false }: { name: string, avatarUrl?: string | null, className?: string, isSquare?: boolean }) {
   const baseClasses = `relative shrink-0 bg-gradient-to-br from-tumba-400 to-neon-pink flex items-center justify-center font-extrabold text-white shadow-sm overflow-hidden ${isSquare ? 'rounded-2xl' : 'rounded-full'} ${className}`;
 
@@ -119,19 +118,14 @@ function UserAvatar({ name, avatarUrl, className = "", isSquare = false }: { nam
   );
 }
 
-// קומפוננטת טעינה מהבהבת
-function Skeleton({ className }: { className: string }) {
-  return <div className={`animate-pulse bg-tumba-500/20 rounded-md ${className}`} />;
-}
 
 // --- Main Page ---
 
 export default function Home() {
-  const { data: session } = useSession();
+  // הוספנו את status כדי לדעת מתי NextAuth סיים לטעון
+  const { data: session, status } = useSession();
   const [stats, setStats] = useState<ActivityStats | null>(null);
   const [users, setUsers] = useState<UserData[]>([]);
-  
-  // States חדשים לחוויית המשתמש
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -163,16 +157,15 @@ export default function Home() {
     if (session) fetchData();
   }, [session, fetchData]);
 
-  const currentUser = users.find((u) => u.id === userId);
-  const myWear = stats?.wearIndex.find((w) => w.userId === userId);
-  const totalCoins = users.reduce((sum, u) => sum + u.tumbaCoins, 0);
+  // ── שלב 1: בזמן ש-NextAuth בודק אם אתה מחובר, או שהנתונים נטענים ──
+  if (status === "loading" || (session && isLoading)) {
+    return <SplashScreen />;
+  }
 
-  /* ── Logged-out view ── */
-  if (!session) {
-    // ... [הקוד נשאר זהה לחלוטין לחלק הלא מחובר]
+  // ── שלב 2: אם אתה לא מחובר, מציגים את העיצוב המקורי שלך למנותקים ──
+  if (status === "unauthenticated" || !session) {
     return (
       <MotionPage className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] bg-mesh px-4">
-        {/* ... */}
         <div className="text-center max-w-md">
           <motion.h1 className="text-4xl font-extrabold mb-3">
             <span className="gradient-text">TumbaNet</span>
@@ -186,60 +179,35 @@ export default function Home() {
     );
   }
 
+  const currentUser = users.find((u) => u.id === userId);
+  const myWear = stats?.wearIndex.find((w) => w.userId === userId);
+  const totalCoins = users.reduce((sum, u) => sum + u.tumbaCoins, 0);
   const myRank = stats?.wearIndex.findIndex((w) => w.userId === userId);
 
-  /* ── Loading Skeleton View ── */
-  if (isLoading) {
+  /* ── Error View ── */
+  if (error) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-5 space-y-6 bg-mesh min-h-[calc(100vh-4rem)]">
-        {/* Hero Skeleton */}
-        <div className="card-premium p-5">
-          <div className="flex gap-4">
-            <Skeleton className="h-[84px] w-[84px] rounded-2xl" />
-            <div className="flex-1 space-y-2 py-2">
-              <Skeleton className="h-6 w-1/2" />
-              <Skeleton className="h-4 w-1/3" />
-            </div>
-          </div>
-          <div className="flex gap-3 mt-5 pt-4 border-t border-tumba-500/[0.12]">
-            <Skeleton className="h-20 flex-[1.4] rounded-xl" />
-            <Skeleton className="h-20 flex-1 rounded-xl" />
-            <Skeleton className="h-20 flex-1 rounded-xl" />
-          </div>
-        </div>
-        {/* Quick blocks skeleton */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 card-premium" />)}
-        </div>
-      </div>
+      <MotionPage className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] bg-mesh px-4">
+        <EmptyState
+          icon={<AlertCircleIcon size={32} strokeWidth={1.5} className="text-red-500/80" />}
+          title="Data Error"
+          description={error}
+          variant="default"
+        />
+        <button onClick={fetchData} className="btn-secondary mt-4">
+          Try Again
+        </button>
+      </MotionPage>
     );
   }
-
-  /* ── Error View ── */
-if (error) {
-  return (
-    <MotionPage className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] bg-mesh px-4">
-      <EmptyState
-        icon={<AlertCircleIcon size={32} strokeWidth={1.5} className="text-red-500/80" />}
-        title="Data Error"
-        description={error}
-        variant="default"
-      />
-      <button onClick={fetchData} className="btn-secondary mt-4">
-        Try Again
-      </button>
-    </MotionPage>
-  );
-}
 
   /* ── Logged-in view (Loaded) ── */
   return (
     <MotionPage className="max-w-2xl mx-auto px-4 py-5 space-y-6 bg-mesh min-h-[calc(100vh-4rem)]">
 
       {/* ── 0) STORIES TRAY ── */}
-    <StoryTray />
-
-    <EnableNotifications />
+      <StoryTray />
+      <EnableNotifications />
 
       {/* ── 1) HERO PROFILE CARD ── */}
       <motion.div
@@ -256,14 +224,12 @@ if (error) {
 
         <div className="relative flex items-start gap-4">
           <div className="relative shrink-0">
-            {/* ← הנה ה-Avatar החכם שלנו במקום ה-DIV הקודם */}
             <UserAvatar 
               name={session.user?.name || "User"} 
               avatarUrl={currentUser?.avatar} 
               isSquare={true} 
               className="h-[84px] w-[84px] text-3xl shadow-lg shadow-tumba-500/25" 
             />
-            
             {myRank === 0 && (
               <div className="absolute -top-3 -right-2 bg-yellow-400/90 rounded-full p-1 shadow-sm">
                 <CrownIcon size={12} strokeWidth={2} className="text-black" />
@@ -326,6 +292,8 @@ if (error) {
             </p>
           </div>
         </div>
+
+        {/* --- הכפתורים המסודרים שלנו --- */}
         <div className="relative flex w-full gap-3 mt-4">
           <div className="flex-1">
             <ActivityReportModal />
@@ -334,8 +302,8 @@ if (error) {
             <TransferCoinsModal users={users.filter(u => u.id !== userId)} />
           </div>
         </div>
-      </motion.div> {/* סגירת ה-Hero Card */}
-      
+      </motion.div>
+
       {/* ── 2) GROUP OVERVIEW ── */}
       <div>
         <div className="flex items-baseline gap-2 mb-3">
@@ -373,7 +341,6 @@ if (error) {
       </div>
 
       <ActivityTicker />
-
       <HomeFeed />
 
       {/* ── 4) QUICK ACCESS ── */}

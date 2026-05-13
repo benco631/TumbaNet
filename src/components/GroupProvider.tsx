@@ -47,12 +47,14 @@ export function useGroup() {
 }
 
 export default function GroupProvider({ children }: { children: React.ReactNode }) {
-  const { data: session } = useSession();
+  // 1. הוספנו את ה-status כדי שנדע מתי NextAuth סיים!
+  const { data: session, status } = useSession(); 
   const [groups, setGroups] = useState<GroupInfo[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchGroups = useCallback(async () => {
+    setIsLoading(true); // 2. חובה! מוודאים שהטעינה דולקת כשהבקשה מתחילה
     try {
       const res = await fetch("/api/groups/my-groups");
       if (!res.ok) throw new Error("Failed to fetch groups");
@@ -68,14 +70,17 @@ export default function GroupProvider({ children }: { children: React.ReactNode 
   }, []);
 
   useEffect(() => {
-    if (session) {
+    // 3. עוצרים הכל אם NextAuth עדיין חושב
+    if (status === "loading") return;
+
+    if (status === "authenticated" && session) {
       fetchGroups();
     } else {
       setGroups([]);
       setPendingRequests([]);
       setIsLoading(false);
     }
-  }, [session, fetchGroups]);
+  }, [session, status, fetchGroups]);
 
   const switchGroup = useCallback(async (groupId: string) => {
     try {
@@ -94,6 +99,7 @@ export default function GroupProvider({ children }: { children: React.ReactNode 
   }, [fetchGroups]);
 
   const activeGroup = groups.find((g) => g.isActive) || null;
+  // עכשיו hasNoGroups יחשב כ-true רק כשאנחנו בטוח לא בטעינה
   const hasNoGroups = !isLoading && !!session && groups.length === 0;
 
   return (
