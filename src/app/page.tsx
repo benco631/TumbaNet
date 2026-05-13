@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { MotionPage, MotionStagger, MotionItem, MotionCard } from "@/components/motion";
 import {
   HighlightsIcon,

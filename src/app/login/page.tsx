@@ -48,7 +48,7 @@ export default function LoginPage() {
       }
 
       // 4. Redirect to dashboard
-      router.push("/sikum");
+      router.push("/");
       router.refresh();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Invalid email or password";
