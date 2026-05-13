@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { prisma } from "@/lib/prisma";
 // מחקנו את ה-import של notifyAllUsers כדי למנוע ספאם לכל הקבוצה
 import { authOptions } from "@/lib/auth"; // שים לב שזה אכן הנתיב הנכון בפרויקט שלך
+import { notifySingleUser } from "@/lib/notifications";
 
 export async function POST(req: Request) {
   try {
@@ -51,6 +52,8 @@ export async function POST(req: Request) {
       if (!sender) throw new Error("Sender not found");
       if (sender.tumbaCoins < amount) throw new Error("Insufficient TumbaCoins balance");
 
+      senderNameForPush = sender.name || "A friend";
+
       // הורדת מטבעות מהשולח
       await tx.user.update({
         where: { id: senderId },
@@ -63,17 +66,22 @@ export async function POST(req: Request) {
         data: { tumbaCoins: { increment: amount } },
       });
       
-      // יצירת התראה (In-App) למקבל הספציפי
-      await tx.notification.create({
-        data: {
-          recipientId: recipientId,
-          actorId: senderId,
-          type: "TRANSFER",
-          message: `Sent you ${amount} TumbaCoins!`,
-          targetUrl: "/",
-        }
-      });
+      // מחקנו מכאן את ה-tx.notification.create!
     });
+
+    // 5. אחרי שהכסף עבר בטוח, יורים את הפוש לחבר!
+    // חשוב שזה יהיה מחוץ לטרנזקציה כדי שלא יעכב אותה
+    try {
+      await notifySingleUser(recipientId, {
+        actorId: senderId,
+        actorName: senderNameForPush,
+        type: "TRANSFER",
+        message: `Sent you ${amount} TumbaCoins!`,
+        targetUrl: "/",
+      });
+    } catch (e) {
+      console.error("Failed to trigger push for transfer", e);
+    }
 
     return NextResponse.json({ success: true, message: "Transfer completed" }, { status: 200 });
 

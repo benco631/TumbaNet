@@ -120,3 +120,66 @@ export async function notifyAllUsers(params: CreateNotificationParams) {
     console.error("Error processing web pushes:", error);
   }
 }
+
+export async function notifySingleUser(recipientId: string, params: CreateNotificationParams) {
+  const { actorId, actorName, type, message, targetUrl } = params;
+
+  // 1. שמירת ההתראה ב-DB (In-App)
+  await prisma.notification.create({
+    data: {
+      recipientId,
+      actorId,
+      type,
+      message,
+      targetUrl: targetUrl || null,
+    },
+  });
+
+  // 2. יריית פוש למכשירים הספציפיים של המשתמש הזה
+  try {
+    const subscriptions = await prisma.pushSubscription.findMany({
+      where: { userId: recipientId },
+    });
+
+    if (subscriptions.length === 0) return;
+
+    let notificationTitle = "New Update";
+    switch (type) {
+      case "TRANSFER":
+        notificationTitle = `TumbaCoins Received! 🪙`;
+        break;
+      case "BET":
+        notificationTitle = `New Bet by ${actorName}`;
+        break;
+      case "EVENT":
+        notificationTitle = `New Event: ${actorName} invited you`;
+        break;
+      default:
+        notificationTitle = `Update from ${actorName}`;
+    }
+
+    const payload = JSON.stringify({
+      title: notificationTitle,
+      message: message,
+      targetUrl: targetUrl || "/",
+    });
+
+    const pushPromises = subscriptions.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          payload
+        );
+      } catch (error) {
+        const pushError = error as webpush.WebPushError;
+        if (pushError.statusCode === 410 || pushError.statusCode === 404) {
+          await prisma.pushSubscription.delete({ where: { id: sub.id } });
+        }
+      }
+    });
+
+    await Promise.all(pushPromises);
+  } catch (error) {
+    console.error("Error sending single web push:", error);
+  }
+}
