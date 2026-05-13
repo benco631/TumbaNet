@@ -77,7 +77,7 @@ export async function POST(req: Request) {
         actorId: senderId,
         actorName: senderNameForPush,
         type: "TRANSFER",
-        message: `Sent you ${amount} TumbaCoins!`,
+        message: `${senderNameForPush} sent you ${amount} TumbaCoins!`,
         targetUrl: "/",
       });
     } catch (e) {
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, message: "Transfer completed" }, { status: 200 });
-    
+
   } catch (error) {
     console.error("Transfer error:", error);
     // המרה בטוחה בלי any
