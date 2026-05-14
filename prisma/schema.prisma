@@ -400,6 +400,7 @@ model Purchase {
   createdAt  DateTime @default(now())
   shopItem   ShopItem @relation(fields: [shopItemId], references: [id])
   user       User     @relation(fields: [userId], references: [id])
+  isUsed     Boolean  @default(false)
 }
 
 model Notification {

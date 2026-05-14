@@ -11,14 +11,14 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const events = await prisma.event.findMany({
+ const events = await prisma.event.findMany({
     where: { groupId: ctx.activeGroupId },
     orderBy: { date: "asc" },
     include: {
-      user: { select: { id: true, name: true } },
+      user: { select: { id: true, name: true, avatar: true } }, // שינינו ל-avatar
       rsvps: {
         include: {
-          user: { select: { id: true, name: true } },
+          user: { select: { id: true, name: true, avatar: true } }, // שינינו ל-avatar
         },
       },
       polls: {
@@ -27,7 +27,7 @@ export async function GET() {
             include: {
               votes: {
                 include: {
-                  user: { select: { id: true, name: true } },
+                  user: { select: { id: true, name: true, avatar: true } }, // שינינו ל-avatar
                 },
               },
             },
