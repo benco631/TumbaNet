@@ -8,7 +8,7 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY as string
 );
 
-type NotificationType = "BET" | "EVENT" | "HIGHLIGHT" | "TRANSFER";
+type NotificationType = "BET" | "EVENT" | "HIGHLIGHT" | "TRANSFER" | "REWARD" | "REJECTED" | "NEW_REQUEST";
 
 interface CreateNotificationParams {
   actorId: string;
@@ -78,6 +78,18 @@ export async function notifyAllUsers(params: CreateNotificationParams) {
         break;
       case "TRANSFER": // <--- הקייס החדש שהוספנו
         notificationTitle = `TumbaCoins Received!`; 
+      case "TRANSFER":
+        notificationTitle = `TumbaCoins Received! `;
+        break;
+      case "REWARD":
+        notificationTitle = `Report Approved!`;
+        break;
+      case "REJECTED":
+        notificationTitle = `Report Update`;
+        break;
+      case "NEW_REQUEST":
+        notificationTitle = `Action Required `;
+        break;  
       default:
         notificationTitle = `Update from ${actorName}`;
     }
