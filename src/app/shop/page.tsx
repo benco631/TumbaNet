@@ -47,25 +47,20 @@ export default function ShopPage() {
   const [loading, setLoading] = useState(true);
   const [userCoins, setUserCoins] = useState(0);
   
-  // UI States
   const [view, setView] = useState<ShopView>("shop");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   
-  // Purchase Modal State
   const [purchaseModalItem, setPurchaseModalItem] = useState<ShopItem | null>(null);
   const [isConfirmingPurchase, setIsConfirmingPurchase] = useState(false);
 
-  // Activation Modal State (החלפה של ה-confirm המכוער)
   const [activationModalItem, setActivationModalItem] = useState<Purchase | null>(null);
   const [isConfirmingActivation, setIsConfirmingActivation] = useState(false);
 
-  // Suggestion states
   const [suggestions, setSuggestions] = useState<ShopSuggestionDTO[]>([]);
   const [suggestionBusy, setSuggestionBusy] = useState<string | null>(null);
   const [submittingSuggestion, setSubmittingSuggestion] = useState(false);
 
-  // Admin state
   const isAdmin = (session?.user as { isAdmin?: boolean })?.isAdmin;
   const userId = (session?.user as { id?: string })?.id;
   const [showAdmin, setShowAdmin] = useState(false);
@@ -146,12 +141,10 @@ export default function ShopPage() {
     setIsConfirmingPurchase(false);
   };
 
-  // פתיחת מודל ההפעלה
   const initiateActivation = (purchase: Purchase) => {
     setActivationModalItem(purchase);
   };
 
-  // ביצוע ההפעלה הסופית מתוך המודל
   const confirmActivation = async () => {
     if (!activationModalItem) return;
     setIsConfirmingActivation(true);
@@ -169,21 +162,19 @@ export default function ShopPage() {
         const data = await res.json();
         showToast(data.error || "Failed to activate item", "error");
       }
-    } catch (e) {
+    } catch (error) {
+      console.error(error);
       showToast("Something went wrong", "error");
     } finally {
       setIsConfirmingActivation(false);
     }
   };
 
-  // Suggestion / Admin handlers (נשמרים ללא שינוי...)
   async function submitSuggestion(input: { title: string; description: string; price: number; category: string }) {
     setSubmittingSuggestion(true);
     try {
       const res = await fetch("/api/shop/suggestions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input),
       });
       if (res.ok) {
         await Promise.all([fetchSuggestions(), fetchItems()]);
@@ -203,9 +194,7 @@ export default function ShopPage() {
     if (suggestionBusy) return;
     setSuggestionBusy(id);
     const res = await fetch(`/api/shop/suggestions/${id}/vote`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ value }),
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ value }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -240,9 +229,7 @@ export default function ShopPage() {
     if (suggestionBusy) return;
     setSuggestionBusy(id);
     const res = await fetch(`/api/shop/suggestions/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }),
     });
     if (res.ok) {
       await Promise.all([fetchSuggestions(), fetchItems(), fetchCoins()]);
@@ -299,46 +286,35 @@ export default function ShopPage() {
   const categories = ["all", ...Array.from(new Set(activeItems.map((i) => i.category)))];
   const filteredItems = selectedCategory === "all" ? activeItems : activeItems.filter((i) => i.category === selectedCategory);
   const pendingSuggestions = suggestions.filter((s) => s.status === "PENDING");
+  const resolvedSuggestions = suggestions.filter((s) => s.status !== "PENDING");
   const pendingCount = pendingSuggestions.length;
 
   return (
     <MotionPage className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
-      {/* Toast */}
       {toast && (
-        <div className={`fixed top-20 right-4 z-50 px-5 py-3 rounded-xl text-sm font-medium shadow-xl transition-all ${
-          toast.type === "success" ? "bg-green-500/90 text-white" : "bg-red-500/90 text-white"
-        }`}>
+        <div className={`fixed top-20 right-4 z-50 px-5 py-3 rounded-xl text-sm font-medium shadow-xl transition-all ${toast.type === "success" ? "bg-green-500/90 text-white" : "bg-red-500/90 text-white"}`}>
           {toast.message}
         </div>
       )}
 
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
             <ShopIcon size={32} strokeWidth={1.75} className="text-tumba-400 shrink-0" />
             <span className="gradient-text">TumbaShop</span>
           </h1>
-          <p className="text-sm sm:text-base text-[var(--text-secondary)] mt-1">
-            Spend your TumbaCoins on rewards, experiences, and more
-          </p>
+          <p className="text-sm sm:text-base text-[var(--text-secondary)] mt-1"> Spend your TumbaCoins on rewards, experiences, and more </p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <CoinBadge amount={userCoins} />
           {isAdmin && (
-            <button
-              onClick={() => { setShowAdmin(!showAdmin); if (showAdmin) resetForm(); }}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                showAdmin ? "bg-tumba-500 text-white" : "bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border)] hover:text-[var(--text-primary)]"
-              }`}
-            >
+            <button onClick={() => { setShowAdmin(!showAdmin); if (showAdmin) resetForm(); }} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${showAdmin ? "bg-tumba-500 text-white" : "bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border)] hover:text-[var(--text-primary)]"}`}>
               {showAdmin ? "Close Admin" : "Manage"}
             </button>
           )}
         </div>
       </div>
 
-      {/* View tabs */}
       <div className="flex items-center gap-1 mb-6 p-1 rounded-2xl bg-[var(--bg-card)] border border-[var(--border)] overflow-x-auto">
         {([
           { key: "shop",    label: "Shop"        },
@@ -346,26 +322,13 @@ export default function ShopPage() {
           { key: "suggest", label: "Suggest"     },
           { key: "history", label: "My Items" },
         ] as { key: ShopView; label: string }[]).map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setView(tab.key)}
-            className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
-              view === tab.key ? "text-white" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-            }`}
-          >
-            {view === tab.key && (
-              <motion.div
-                layoutId="shop-tab-indicator"
-                className="absolute inset-0 rounded-xl bg-gradient-to-r from-tumba-500 to-neon-pink shadow-lg shadow-tumba-500/25"
-                transition={{ type: "spring", stiffness: 350, damping: 30 }}
-              />
-            )}
+          <button key={tab.key} onClick={() => setView(tab.key)} className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${view === tab.key ? "text-white" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}>
+            {view === tab.key && ( <motion.div layoutId="shop-tab-indicator" className="absolute inset-0 rounded-xl bg-gradient-to-r from-tumba-500 to-neon-pink shadow-lg shadow-tumba-500/25" transition={{ type: "spring", stiffness: 350, damping: 30 }} /> )}
             <span className="relative z-10">{tab.label}</span>
           </button>
         ))}
       </div>
 
-      {/* Admin Panel (נשמר...) */}
       {isAdmin && showAdmin && (
         <div className="mb-8 p-4 sm:p-5 rounded-2xl border border-tumba-500/20 bg-tumba-500/5">
           <h2 className="text-lg font-semibold mb-4">{editingItem ? "Edit Item" : "Add New Item"}</h2>
@@ -388,11 +351,29 @@ export default function ShopPage() {
               {editingItem && ( <button type="button" onClick={resetForm} className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]">Cancel</button> )}
             </div>
           </form>
+
+          {/* Admin item list */}
+          <div className="mt-6 space-y-2">
+            <h3 className="text-sm font-medium text-[var(--text-secondary)] mb-2">All Items ({items.length})</h3>
+            {items.map((item) => (
+              <div key={item.id} className={`flex items-center justify-between gap-3 p-3 rounded-xl border ${item.active ? "border-[var(--border)]" : "border-red-500/20 opacity-60"} bg-[var(--bg-card)]`}>
+                <div className="min-w-0 flex-1">
+                  <span className="text-sm font-medium">{item.title}</span>
+                  <span className="text-xs text-[var(--text-secondary)] ml-2">{item.price} TC</span>
+                  {!item.active && <span className="text-xs text-red-400 ml-2">Inactive</span>}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => startEdit(item)} className="text-xs px-2 py-1 rounded-lg text-tumba-400 hover:bg-tumba-500/10">Edit</button>
+                  <button onClick={() => toggleActive(item)} className="text-xs px-2 py-1 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-hover)]"> {item.active ? "Deactivate" : "Activate"} </button>
+                  <button onClick={() => deleteItem(item.id)} className="text-xs px-2 py-1 rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-500/10">Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       <AnimatePresence mode="wait">
-        {/* "My Items" Tab */}
         {view === "history" && (
           <motion.div key="history" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="space-y-3">
             {purchases.length === 0 ? (
@@ -406,6 +387,7 @@ export default function ShopPage() {
                 <div key={p.id} className="flex items-center gap-3 p-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] flex-wrap sm:flex-nowrap">
                   <div className="h-12 w-12 rounded-xl bg-tumba-500/10 flex items-center justify-center text-2xl shrink-0">
                     {p.shopItem.imageUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
                       <img src={p.shopItem.imageUrl} alt="" className="h-10 w-10 rounded-lg object-cover" />
                     ) : (
                       <PackageIcon size={22} strokeWidth={1.75} className="text-[var(--text-secondary)]" />
@@ -425,10 +407,7 @@ export default function ShopPage() {
                         <CheckCircle2 size={14} /> Used
                       </div>
                     ) : (
-                      <button
-                        onClick={() => initiateActivation(p)}
-                        className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-4 py-1.5 rounded-lg border border-amber-500/20 transition-all"
-                      >
+                      <button onClick={() => initiateActivation(p)} className="flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-4 py-1.5 rounded-lg border border-amber-500/20 transition-all">
                         <Zap size={14} /> Activate
                       </button>
                     )}
@@ -439,83 +418,131 @@ export default function ShopPage() {
           </motion.div>
         )}
 
-        {/* Voting Tab (נשמר...) */}
         {view === "voting" && (
           <motion.div key="voting" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
-            {/* ... לוגיקת ה-voting הקיימת ... */}
-            <div className="space-y-6">
-              {pendingSuggestions.map((s) => (
-                <SuggestionCard key={s.id} suggestion={s} onVote={(v) => voteSuggestion(s.id, v)} onClearVote={() => clearVote(s.id)} pending={suggestionBusy === s.id} isAdmin={isAdmin} />
-              ))}
-            </div>
+            {suggestions.length === 0 ? (
+              <div className="text-center py-16 text-[var(--text-secondary)]">
+                <ShopIcon size={48} strokeWidth={1.25} className="mb-4 text-[var(--text-secondary)]" />
+                <p className="text-lg">No community suggestions yet</p>
+                <p className="text-sm mt-1">Be the first — head to the Suggest tab.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {pendingSuggestions.length > 0 && (
+                  <div>
+                    <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3"> Open for voting · {pendingSuggestions.length} </h2>
+                    <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {pendingSuggestions.map((s) => (
+                        <motion.div variants={fadeInUp} key={s.id}>
+                          <SuggestionCard suggestion={s} onVote={(v) => voteSuggestion(s.id, v)} onClearVote={() => clearVote(s.id)} onAdminApprove={isAdmin ? () => adminResolveSuggestion(s.id, "APPROVE") : undefined} onAdminReject={isAdmin ? () => adminResolveSuggestion(s.id, "REJECT") : undefined} pending={suggestionBusy === s.id} isAdmin={isAdmin} />
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  </div>
+                )}
+                {resolvedSuggestions.length > 0 && (
+                  <div>
+                    <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3"> Resolved · {resolvedSuggestions.length} </h2>
+                    <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {resolvedSuggestions.map((s) => (
+                        <motion.div variants={fadeInUp} key={s.id}>
+                          <SuggestionCard suggestion={s} onVote={() => {}} onClearVote={() => {}} pending={false} />
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  </div>
+                )}
+              </div>
+            )}
           </motion.div>
         )}
 
-        {/* Suggest Tab (נשמר...) */}
         {view === "suggest" && (
           <motion.div key="suggest" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="max-w-2xl mx-auto">
             <SuggestionForm onSubmit={submitSuggestion} submitting={submittingSuggestion} />
           </motion.div>
         )}
 
-        {/* Shop Grid Tab */}
         {view === "shop" && (
           <motion.div key="shop" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredItems.map((item) => (
-                <motion.div
-                  variants={fadeInUp}
-                  key={item.id}
-                  onClick={() => initiatePurchase(item)}
-                  className="p-4 sm:p-5 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] transition-all flex flex-col cursor-pointer"
-                >
-                  <h3 className="font-semibold text-base mb-1">{item.title}</h3>
-                  <p className="text-sm text-[var(--text-secondary)] flex-1 mb-3 line-clamp-2">{item.description}</p>
-                  <CoinAmountMd amount={item.price} />
-                </motion.div>
-              ))}
-            </div>
+            {categories.length > 2 && (
+              <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+                {categories.map((cat) => (
+                  <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${selectedCategory === cat ? "bg-tumba-500 text-white shadow-lg shadow-tumba-500/25" : "bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)]"}`}>
+                    {cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {filteredItems.length === 0 ? (
+              <div className="text-center py-16 text-[var(--text-secondary)]">
+                <ShopIcon size={48} strokeWidth={1.25} className="mb-4 text-[var(--text-secondary)]" />
+                <p className="text-lg">No items in the shop yet</p>
+                {isAdmin && <p className="text-sm mt-1">Use the Manage button to add items.</p>}
+              </div>
+            ) : (
+              <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredItems.map((item) => (
+                  <motion.div variants={fadeInUp} key={item.id} onClick={() => initiatePurchase(item)} className="p-4 sm:p-5 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] transition-all flex flex-col cursor-pointer">
+                    {item.imageUrl ? (
+                      <div className="h-36 sm:h-40 rounded-xl overflow-hidden mb-3 bg-[var(--bg-primary)]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="h-24 sm:h-28 rounded-xl mb-3 bg-gradient-to-br from-tumba-500/10 to-tumba-700/10 flex items-center justify-center">
+                        <PackageIcon size={36} strokeWidth={1.5} className="text-tumba-400/50" />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                      {item.source === "COMMUNITY" && ( <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-tumba-500/20 to-neon-pink/20 text-tumba-400 font-semibold">Community</span> )}
+                      {item.source === "BUILT_IN" && ( <span className="text-[10px] px-2 py-0.5 rounded-full bg-neon-pink/15 text-neon-pink font-semibold">Classic</span> )}
+                      {item.category !== "general" && ( <span className="text-[10px] px-2 py-0.5 rounded-full bg-tumba-500/15 text-tumba-400 font-medium capitalize">{item.category}</span> )}
+                    </div>
+                    <h3 className="font-semibold text-base mb-1">{item.title}</h3>
+                    <p className="text-sm text-[var(--text-secondary)] flex-1 mb-3 line-clamp-2">{item.description}</p>
+                    <div className="flex items-center justify-between gap-2 mt-auto">
+                      <CoinAmountMd amount={item.price} />
+                      <button disabled={userCoins < item.price} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${userCoins < item.price ? "bg-[var(--border)] text-[var(--text-secondary)] cursor-not-allowed" : "bg-tumba-500/10 text-tumba-400 hover:bg-tumba-500 hover:text-white border border-tumba-500/20"}`}> Buy </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* --- Purchase Confirmation Modal --- */}
       <AnimatePresence>
         {purchaseModalItem && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !isConfirmingPurchase && setPurchaseModalItem(null)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-sm bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden p-6 text-center">
               <div className="mx-auto w-16 h-16 rounded-full bg-tumba-500/10 border border-tumba-500/20 flex items-center justify-center mb-4 text-tumba-400"> <ShopIcon size={32} /> </div>
-              <h2 className="text-xl font-bold mb-2">Buy "{purchaseModalItem.title}"?</h2>
+              <h2 className="text-xl font-bold mb-2">Buy &quot;{purchaseModalItem.title}&quot;?</h2>
               <p className="text-sm text-[var(--text-secondary)] mb-6"> This will deduct <strong className="text-[var(--text-primary)]">{purchaseModalItem.price} TC</strong> from your balance. </p>
               <div className="flex items-center gap-3">
                 <button onClick={() => setPurchaseModalItem(null)} disabled={isConfirmingPurchase} className="flex-1 py-3 rounded-xl font-semibold bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-secondary)]">Cancel</button>
-                <button onClick={confirmPurchase} disabled={isConfirmingPurchase} className="flex-1 py-3 rounded-xl font-bold bg-tumba-500 text-white shadow-lg shadow-tumba-500/25 transition-all">
-                  {isConfirmingPurchase ? "Buying..." : "Confirm"}
-                </button>
+                <button onClick={confirmPurchase} disabled={isConfirmingPurchase} className="flex-1 py-3 rounded-xl font-bold bg-tumba-500 text-white shadow-lg shadow-tumba-500/25 transition-all"> {isConfirmingPurchase ? "Buying..." : "Confirm"} </button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* --- Activation Confirmation Modal (חדש!) --- */}
       <AnimatePresence>
         {activationModalItem && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !isConfirmingActivation && setActivationModalItem(null)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-sm bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden p-6 text-center">
               <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4 text-amber-400"> <Sparkles size={32} /> </div>
-              <h2 className="text-xl font-bold mb-2">Activate "{activationModalItem.shopItem.title}"?</h2>
-              <p className="text-sm text-[var(--text-secondary)] mb-6"> Everyone in the group will receive a notification that you've used this item! 💥 </p>
+              <h2 className="text-xl font-bold mb-2">Activate &quot;{activationModalItem.shopItem.title}&quot;?</h2>
+              <p className="text-sm text-[var(--text-secondary)] mb-6"> Everyone in the group will receive a notification that you&apos;ve used this item! 💥 </p>
               <div className="flex items-center gap-3">
                 <button onClick={() => setActivationModalItem(null)} disabled={isConfirmingActivation} className="flex-1 py-3 rounded-xl font-semibold bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-secondary)]">Wait, Not yet</button>
                 <button onClick={confirmActivation} disabled={isConfirmingActivation} className="flex-1 py-3 rounded-xl font-bold bg-amber-500 text-white shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2">
-                  {isConfirmingActivation ? (
-                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />
-                  ) : (
-                    "Activate Now!"
-                  )}
+                  {isConfirmingActivation ? ( <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" /> ) : ( "Activate Now!" )}
                 </button>
               </div>
             </motion.div>

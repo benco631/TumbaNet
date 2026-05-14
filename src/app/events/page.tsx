@@ -15,7 +15,6 @@ import {
   MaybeIcon,
   NotGoingIcon,
   LocationIcon,
-  EventsIcon,
 } from "@/lib/icons";
 import { Clock, BarChart2, X, Send } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
@@ -513,7 +512,7 @@ function EventCard({
   const myRsvp = event.rsvps.find((r) => r.userId === userId);
 
   const goingCount = event.rsvps.filter((r) => r.status === "GOING").length;
-  const notGoingCount = event.rsvps.filter((r) => r.status === "NOT_GOING").length;
+ 
 
   const vibeColorClass = CATEGORY_COLORS[event.category] || CATEGORY_COLORS["other"];
 
@@ -622,7 +621,7 @@ function EventCard({
                     return (
                       <button
                         key={option.id}
-                        onClick={() => { if (past) return; isSelected ? onUnvote(poll.id) : onVote(poll.id, option.id); }}
+                        onClick={() => { if (past) return; if (isSelected) { onUnvote(poll.id); } else { onVote(poll.id, option.id); } }}
                         disabled={past}
                         className={`relative w-full text-left px-4 py-3 rounded-xl border transition-all overflow-hidden ${
                           isSelected ? "border-tumba-500 bg-tumba-500/10 shadow-sm" : "border-[var(--border)] hover:border-tumba-500/30 bg-[var(--bg-card)]"
