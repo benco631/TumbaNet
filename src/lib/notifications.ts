@@ -8,7 +8,7 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY as string
 );
 
-type NotificationType = "BET" | "EVENT" | "HIGHLIGHT" | "TRANSFER" | "REWARD" | "REJECTED" | "NEW_REQUEST";
+type NotificationType = "BET" | "EVENT" | "HIGHLIGHT" | "TRANSFER" | "REWARD" | "REJECTED" | "NEW_REQUEST" | "SHOP_USE";
 
 interface CreateNotificationParams {
   actorId: string;
@@ -89,6 +89,9 @@ export async function notifyAllUsers(params: CreateNotificationParams) {
         break;
       case "NEW_REQUEST":
         notificationTitle = `Action Required `;
+        break;  
+      case "SHOP_USE":
+        notificationTitle = `Shop Item Activated!`;
         break;  
       default:
         notificationTitle = `Update from ${actorName}`;
