@@ -11,7 +11,7 @@ import { staggerContainer, fadeInUp } from "@/lib/animations";
 import SuggestionCard from "@/components/shop/SuggestionCard";
 import SuggestionForm from "@/components/shop/SuggestionForm";
 import type { ShopSuggestionDTO } from "@/lib/shop/types";
-import { X, CheckCircle2, Zap, Sparkles } from "lucide-react";
+import { CheckCircle2, Zap, Sparkles } from "lucide-react";
 
 interface ShopItem {
   id: string;
