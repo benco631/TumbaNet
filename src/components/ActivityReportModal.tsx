@@ -2,58 +2,57 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Car, Home, Users, MapPin, Zap, X, Plus, Minus } from "lucide-react";
+import { Car, Home, Users, MapPin, X, Plus, Minus, Coffee, Sparkles, Check } from "lucide-react";
 
 export default function ActivityReportModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const [type, setType] = useState<"CAR" | "HOST">("CAR");
+  const [type, setType] = useState<"DRIVE" | "HOST">("DRIVE");
   
-  // Car States
+  // Drive States
   const [distance, setDistance] = useState<"SHORT" | "MEDIUM" | "LONG">("SHORT");
   const [passengers, setPassengers] = useState(1);
   
   // Host States
+  const [hostType, setHostType] = useState<"REGULAR" | "INVESTED">("REGULAR");
   const [attendees, setAttendees] = useState(2);
-  const [shortNotice, setShortNotice] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('/api/activity', {
+      const response = await fetch('/api/activity/request', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type,
-          distance,
-          passengers,
-          attendees,
-          shortNotice,
+          subType: type === "DRIVE" ? distance : hostType,
+          participantCount: type === "DRIVE" ? passengers : attendees,
+          note: "", 
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to submit');
-      }
+      if (!response.ok) throw new Error('Failed to submit request');
 
-      // במקרה של הצלחה: סוגרים את המודל ומאפסים את הטופס
-      setIsOpen(false);
-      setDistance("SHORT");
-      setPassengers(1);
-      setAttendees(2);
-      setShortNotice(false);
-      
-      // אופציונלי: אפשר לעשות פה רענון לעמוד כדי שהסטטיסטיקות למעלה יתעדכנו מיד
-      // window.location.reload(); 
+      // במקום alert מכוער - מפעילים מצב הצלחה
+      setIsSubmitting(false);
+      setShowSuccess(true);
+
+      // מחכים שנייה וחצי כדי שהמשתמש יראה את ההצלחה, ואז סוגרים ומאפסים
+      setTimeout(() => {
+        setIsOpen(false);
+        setShowSuccess(false);
+        setDistance("SHORT");
+        setPassengers(1);
+        setHostType("REGULAR");
+        setAttendees(2);
+      }, 1500);
       
     } catch (error) {
       console.error(error);
       alert('Something went wrong. Tumbas are confused.');
-    } finally {
       setIsSubmitting(false);
     }
   };  
@@ -69,20 +68,18 @@ export default function ActivityReportModal() {
         <Plus size={18} strokeWidth={2.5} />
         Report Activity
       </motion.button>
-      {/* Modal */}
+
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsOpen(false)}
+              onClick={() => !isSubmitting && !showSuccess && setIsOpen(false)}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
 
-            {/* Modal Content */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -93,7 +90,7 @@ export default function ActivityReportModal() {
               <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
                 <h2 className="text-lg font-extrabold gradient-text">Report Activity</h2>
                 <button
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => !isSubmitting && !showSuccess && setIsOpen(false)}
                   className="p-1.5 rounded-full hover:bg-[var(--bg-primary)] text-[var(--text-secondary)] transition-colors"
                 >
                   <X size={20} />
@@ -104,9 +101,9 @@ export default function ActivityReportModal() {
                 {/* Tabs */}
                 <div className="flex p-1 mb-6 bg-[var(--bg-primary)] rounded-xl border border-[var(--border)]">
                   <button
-                    onClick={() => setType("CAR")}
+                    onClick={() => setType("DRIVE")}
                     className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${
-                      type === "CAR"
+                      type === "DRIVE"
                         ? "bg-[var(--bg-card)] text-tumba-400 shadow-sm border border-tumba-500/20"
                         : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     }`}
@@ -127,14 +124,9 @@ export default function ActivityReportModal() {
                   </button>
                 </div>
 
-                {/* Car Content */}
-                {type === "CAR" && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="space-y-5"
-                  >
-                    {/* Distance */}
+                {/* Drive Content */}
+                {type === "DRIVE" && (
+                  <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
                     <div>
                       <label className="flex items-center gap-1.5 text-sm font-semibold mb-3 text-[var(--text-secondary)]">
                         <MapPin size={16} /> Distance
@@ -159,23 +151,16 @@ export default function ActivityReportModal() {
                       </div>
                     </div>
 
-                    {/* Passengers */}
                     <div>
                       <label className="flex items-center gap-1.5 text-sm font-semibold mb-3 text-[var(--text-secondary)]">
                         <Users size={16} /> Passengers (excluding you)
                       </label>
                       <div className="flex items-center justify-between bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl p-2">
-                        <button
-                          onClick={() => setPassengers(Math.max(1, passengers - 1))}
-                          className="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-tumba-500/10 text-[var(--text-primary)] transition-colors"
-                        >
+                        <button onClick={() => setPassengers(Math.max(1, passengers - 1))} className="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-tumba-500/10 text-[var(--text-primary)] transition-colors">
                           <Minus size={18} />
                         </button>
                         <span className="text-xl font-extrabold">{passengers}</span>
-                        <button
-                          onClick={() => setPassengers(passengers + 1)}
-                          className="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-tumba-500/10 text-[var(--text-primary)] transition-colors"
-                        >
+                        <button onClick={() => setPassengers(passengers + 1)} className="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-tumba-500/10 text-[var(--text-primary)] transition-colors">
                           <Plus size={18} />
                         </button>
                       </div>
@@ -185,65 +170,54 @@ export default function ActivityReportModal() {
 
                 {/* Host Content */}
                 {type === "HOST" && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="space-y-5"
-                  >
-                    {/* Attendees */}
+                  <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
+                    <div>
+                      <label className="flex items-center gap-1.5 text-sm font-semibold mb-3 text-[var(--text-secondary)]">
+                        <Home size={16} /> Hosting Effort
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button onClick={() => setHostType("REGULAR")} className={`flex items-center justify-center gap-2 py-2.5 px-2 rounded-xl text-sm font-bold transition-all border ${hostType === "REGULAR" ? "bg-tumba-500/10 border-tumba-500/40 text-tumba-300" : "bg-[var(--bg-primary)] border-[var(--border)] text-[var(--text-secondary)] hover:border-tumba-500/20"}`}>
+                          <Coffee size={16} /> Regular
+                        </button>
+                        <button onClick={() => setHostType("INVESTED")} className={`flex items-center justify-center gap-2 py-2.5 px-2 rounded-xl text-sm font-bold transition-all border ${hostType === "INVESTED" ? "bg-amber-500/10 border-amber-500/40 text-amber-400" : "bg-[var(--bg-primary)] border-[var(--border)] text-[var(--text-secondary)] hover:border-amber-500/20"}`}>
+                          <Sparkles size={16} /> Invested
+                        </button>
+                      </div>
+                    </div>
+
                     <div>
                       <label className="flex items-center gap-1.5 text-sm font-semibold mb-3 text-[var(--text-secondary)]">
                         <Users size={16} /> Attendees
                       </label>
                       <div className="flex items-center justify-between bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl p-2">
-                        <button
-                          onClick={() => setAttendees(Math.max(1, attendees - 1))}
-                          className="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-tumba-500/10 text-[var(--text-primary)] transition-colors"
-                        >
+                        <button onClick={() => setAttendees(Math.max(1, attendees - 1))} className="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-tumba-500/10 text-[var(--text-primary)] transition-colors">
                           <Minus size={18} />
                         </button>
                         <span className="text-xl font-extrabold">{attendees}</span>
-                        <button
-                          onClick={() => setAttendees(attendees + 1)}
-                          className="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-tumba-500/10 text-[var(--text-primary)] transition-colors"
-                        >
+                        <button onClick={() => setAttendees(attendees + 1)} className="p-2 rounded-lg bg-[var(--bg-card)] hover:bg-tumba-500/10 text-[var(--text-primary)] transition-colors">
                           <Plus size={18} />
                         </button>
                       </div>
                     </div>
-
-                    {/* Short Notice */}
-                    <button
-                      onClick={() => setShortNotice(!shortNotice)}
-                      className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
-                        shortNotice
-                          ? "bg-tumba-500/10 border-tumba-500/40 text-tumba-300"
-                          : "bg-[var(--bg-primary)] border-[var(--border)] text-[var(--text-secondary)] hover:border-tumba-500/20"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Zap size={18} className={shortNotice ? "text-yellow-400" : ""} />
-                        <span className="font-bold text-sm">Short Notice</span>
-                      </div>
-                      <div className={`w-10 h-6 rounded-full p-1 transition-colors ${shortNotice ? "bg-tumba-500" : "bg-[var(--bg-card)] border border-[var(--border)]"}`}>
-                        <div className={`w-4 h-4 rounded-full bg-white transition-transform ${shortNotice ? "translate-x-4" : "translate-x-0"}`} />
-                      </div>
-                    </button>
                   </motion.div>
                 )}
 
-                {/* Submit Button */}
+                {/* Submit / Success Button */}
                 <button
                   onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="w-full mt-6 py-3.5 bg-gradient-to-r from-tumba-600 to-tumba-400 hover:from-tumba-500 hover:to-tumba-400 text-white rounded-xl font-extrabold shadow-lg shadow-tumba-500/20 transition-all disabled:opacity-70 flex items-center justify-center gap-2"
+                  disabled={isSubmitting || showSuccess}
+                  className={`w-full mt-6 py-3.5 rounded-xl font-extrabold shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-90 ${
+                    showSuccess 
+                      ? "bg-green-500 text-white shadow-green-500/20" 
+                      : "bg-gradient-to-r from-tumba-600 to-tumba-400 hover:from-tumba-500 hover:to-tumba-400 text-white shadow-tumba-500/20"
+                  }`}
                 >
                   {isSubmitting ? (
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                      className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
-                    />
+                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />
+                  ) : showSuccess ? (
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex items-center gap-2">
+                      <Check size={20} strokeWidth={3} /> Sent to Admin
+                    </motion.div>
                   ) : (
                     "Submit Report"
                   )}

@@ -51,6 +51,8 @@ model User {
   activeGroup           Group?               @relation("ActiveGroup", fields: [activeGroupId], references: [id])
   wagers                Wager[]
   subscriptions         PushSubscription[]
+  activityRequestsMade     ActivityRequest[] @relation("RequestsMade")
+  activityRequestsResolved ActivityRequest[] @relation("RequestsResolved")
 }
 
 model Group {
@@ -80,6 +82,7 @@ model Group {
   shopItems           ShopItem[]
   stories             Story[]
   activeUsers         User[]               @relation("ActiveGroup")
+  activityRequests    ActivityRequest[]
 
   @@index([inviteCode])
   @@index([createdById])
@@ -97,6 +100,7 @@ model GroupMembership {
   @@unique([userId, groupId])
   @@index([groupId])
   @@index([userId])
+  
 }
 
 model GroupJoinRequest {
@@ -526,4 +530,26 @@ model PushSubscription {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+}
+/// Requests for TumbaCoins that require Admin approval (Driving / Hosting)
+model ActivityRequest {
+  id               String   @id @default(cuid())
+  userId           String
+  groupId          String?
+  type             String   // e.g., "DRIVE", "HOST"
+  subType          String   // e.g., "SHORT", "MEDIUM", "LONG", "REGULAR", "INVESTED"
+  participantCount Int      @default(0) // Number of passengers or guests for bonus calculation
+  note             String?
+  calculatedCoins  Int      // The exact amount of TumbaCoins this request is worth
+  status           String   @default("PENDING") // "PENDING", "APPROVED", "REJECTED"
+  resolvedById     String?  // The admin who approved or rejected the request
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User     @relation("RequestsMade", fields: [userId], references: [id], onDelete: Cascade)
+  resolvedBy       User?    @relation("RequestsResolved", fields: [resolvedById], references: [id])
+  group            Group?   @relation(fields: [groupId], references: [id])
+
+  @@index([userId])
+  @@index([groupId, status])
 }

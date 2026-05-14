@@ -34,9 +34,9 @@ const tabs: { name: string; href: string; icon: LucideIcon; shortName: string }[
   { name: "Album",         href: "/album",         icon: AlbumIcon,        shortName: "Album"        },
 ];
 
+// איחדנו את הכל לכפתור אדמין אחד חכם שמוביל ללוח הבקרה המרכזי
 const adminTabs = [
-  { name: "Admin",              href: "/admin/highlights",    icon: AdminIcon,        shortName: "Admin"     },
-  { name: "Admin Achievements", href: "/admin/achievements",  icon: AchievementsIcon, shortName: "Awards"    },
+  { name: "Admin Dashboard", href: "/admin", icon: AdminIcon, shortName: "Admin" },
 ];
 
 export default function Navbar() {
@@ -82,6 +82,8 @@ export default function Navbar() {
                   </Link>
                 );
               })}
+              
+              {/* מרנדר את כפתור האדמין רק אם המשתמש הוא מנהל */}
               {isAdmin && adminTabs.map((tab) => {
                 const isActive = pathname.startsWith(tab.href);
                 const Icon = tab.icon;

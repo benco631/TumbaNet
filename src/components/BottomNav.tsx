@@ -158,37 +158,23 @@ export default function BottomNav() {
                     </motion.div>
                   );
                 })}
+                
+                {/* כאן איחדנו את כפתורי האדמין לכפתור אחד! */}
                 {isAdmin && (
-                  <>
-                    <motion.div variants={fadeInUp}>
-                      <Link
-                        href="/admin/highlights"
-                        onClick={() => setSheetOpen(false)}
-                        className={`flex flex-col items-center gap-2 py-4 rounded-2xl transition-colors ${
-                          pathname.startsWith("/admin/highlights")
-                            ? "bg-tumba-500/15 text-tumba-400"
-                            : "bg-[var(--bg-card)] text-[var(--text-secondary)]"
-                        }`}
-                      >
-                        <AdminIcon size={22} strokeWidth={1.75} />
-                        <span className="text-xs font-medium">Admin</span>
-                      </Link>
-                    </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <Link
-                        href="/admin/achievements"
-                        onClick={() => setSheetOpen(false)}
-                        className={`flex flex-col items-center gap-2 py-4 rounded-2xl transition-colors ${
-                          pathname.startsWith("/admin/achievements")
-                            ? "bg-tumba-500/15 text-tumba-400"
-                            : "bg-[var(--bg-card)] text-[var(--text-secondary)]"
-                        }`}
-                      >
-                        <AchievementsIcon size={22} strokeWidth={1.75} />
-                        <span className="text-xs font-medium">Awards</span>
-                      </Link>
-                    </motion.div>
-                  </>
+                  <motion.div variants={fadeInUp}>
+                    <Link
+                      href="/admin"
+                      onClick={() => setSheetOpen(false)}
+                      className={`flex flex-col items-center gap-2 py-4 rounded-2xl transition-colors ${
+                        pathname.startsWith("/admin")
+                          ? "bg-tumba-500/15 text-tumba-400"
+                          : "bg-[var(--bg-card)] text-[var(--text-secondary)]"
+                      }`}
+                    >
+                      <AdminIcon size={22} strokeWidth={1.75} />
+                      <span className="text-xs font-medium">Admin</span>
+                    </Link>
+                  </motion.div>
                 )}
               </motion.div>
 

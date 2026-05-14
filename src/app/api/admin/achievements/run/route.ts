@@ -5,13 +5,6 @@ import { runMonthlyAchievements } from "@/lib/achievements";
 
 export const dynamic = "force-dynamic";
 
-/**
- * POST /api/admin/achievements/run
- * Admin-only: calculate and award monthly achievements for a given month/year.
- * Safe to run multiple times — duplicate awards are skipped.
- *
- * Body: { month: number (1-12), year: number }
- */
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
