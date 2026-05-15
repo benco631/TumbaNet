@@ -4,13 +4,14 @@ import { APP_ENV, isAllowedStagingEmail } from "@/lib/env";
 
 const STAGING_BLOCKED_PATH = "/staging-blocked";
 
-// רשימת העמודים שפתוחים לכולם (גם לאורחים שלא מחוברים)
+// רשימת העמודים שפתוחים לכולם (גם לאורחים שלא מחוברים, כולל הבוט של ה-Cron)
 const PUBLIC_PATHS = [
   STAGING_BLOCKED_PATH,
   "/login",
   "/register",
   "/api/auth",
   "/api/register",
+  "/api/keep-alive", // <--- הוספנו את זה!
 ];
 
 function isPublicPath(pathname: string): boolean {
