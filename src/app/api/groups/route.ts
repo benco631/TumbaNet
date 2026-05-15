@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     });
 
     // Award welcome bonus to group creator (idempotent)
-    await awardJoinBonus(userId, group.id, group.name);
+    await awardJoinBonus(userId, group.id);
 
     return NextResponse.json(group, { status: 201 });
   } catch (err) {
