@@ -503,7 +503,7 @@ export default function EventsPage() {
               <div className="mx-auto w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4 text-red-400">
                 <Trash2 size={32} />
               </div>
-              <h2 className="text-xl font-bold mb-2">Delete "{eventToDelete.title}"?</h2>
+              <h2 className="text-xl font-bold mb-2">Delete &quot;{eventToDelete.title}&quot;?</h2>
               <p className="text-sm text-[var(--text-secondary)] mb-6">
                 This action cannot be undone. All RSVPs and polls will be lost.
               </p>

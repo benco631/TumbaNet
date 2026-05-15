@@ -18,7 +18,6 @@ import {
   SHOP_ITEM_SOURCE,
   VOTE_VALUE,
   VOTING_RULES,
-  REWARD_RULES,
   SUGGESTION_LIMITS,
   computeSuggestionExpiry,
   evaluateVotes,
@@ -317,7 +316,7 @@ export async function promoteSuggestionToItem(
     }
 
     // 3. יצירת הפריט כולל שיוך לקבוצה!
-    const item = await tx.shopItem.create({
+    await tx.shopItem.create({
       data: {
         title: current.title,
         description: current.description,
