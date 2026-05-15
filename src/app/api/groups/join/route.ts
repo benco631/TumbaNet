@@ -64,7 +64,7 @@ export async function POST(req: Request) {
         });
       });
       // Award welcome bonus outside the membership tx (idempotent, handles its own tx)
-      await awardJoinBonus(userId, group.id, group.name);
+      await awardJoinBonus(userId, group.id);
       return NextResponse.json({ status: "joined", group });
     } else {
       // CLOSED group — create a join request
