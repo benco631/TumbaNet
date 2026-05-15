@@ -111,6 +111,7 @@ export async function awardJoinBonus(
   if (existing) return false;
 
   await prisma.$transaction(async (tx) => {
+    // 1. אנחנו משאירים את הלוג, כדי שהמערכת תסמן "וי" על תהליך ההצטרפות
     await tx.rewardLog.create({
       data: {
         userId,
@@ -119,13 +120,16 @@ export async function awardJoinBonus(
         periodStartDate: joinDate,
       },
     });
-    await awardCoins(
+    
+    // 2. מבטלים את הכסף הכפול! פריסמה כבר נתנה לו 100 בהרשמה.
+    /* await awardCoins(
       tx,
       userId,
       JOIN_BONUS_AMOUNT,
       `Welcome bonus — joined ${groupName}`,
       groupId,
     );
+    */
   });
 
   return true;
