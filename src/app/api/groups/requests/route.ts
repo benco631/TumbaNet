@@ -120,7 +120,7 @@ export async function POST(req: Request) {
       });
 
       // Award welcome bonus to newly approved member (idempotent)
-      await awardJoinBonus(joinRequest.userId, joinRequest.groupId, joinRequest.group.name);
+      await awardJoinBonus(joinRequest.userId, joinRequest.groupId);
 
       return NextResponse.json({ status: "approved" });
     } else {
