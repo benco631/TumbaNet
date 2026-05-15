@@ -158,9 +158,7 @@ export default function PostCard({ post, isMine, onDeleted }: PostProps) {
           >
             <MessageCircle size={26} />
           </button>
-          <button className="text-[var(--text-primary)] transition-transform active:scale-90">
-            <Send size={24} />
-          </button>
+          
         </div>
 
         {/* ── Footer: כיתוב ולייקים ── */}

@@ -108,27 +108,42 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const ctx = await getSessionContext();
-  if (!ctx) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const ctx = await getSessionContext();
+    if (!ctx) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // שליפת המשתמש כדי לוודא אם הוא אדמין
+    const currentUser = await prisma.user.findUnique({
+      where: { id: ctx.userId },
+      select: { isAdmin: true }
+    });
+    const isAdmin = currentUser?.isAdmin || false;
+
+    const { searchParams } = new URL(req.url);
+    const eventId = searchParams.get("id");
+
+    if (!eventId) {
+      return NextResponse.json({ error: "Event ID required" }, { status: 400 });
+    }
+
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // רק יוצר האירוע או אדמין יכולים למחוק
+    if (event.userId !== ctx.userId && !isAdmin) {
+      return NextResponse.json({ error: "Not authorized to delete this event" }, { status: 403 });
+    }
+
+    // בזכות ה- onDelete: Cascade בסכמה שלך, השורה הזו מוחקת את האירוע ואת כל הסקרים והאישורים שקשורים אליו!
+    await prisma.event.delete({ where: { id: eventId } });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Delete event error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-
-  const { searchParams } = new URL(req.url);
-  const eventId = searchParams.get("id");
-
-  if (!eventId) {
-    return NextResponse.json({ error: "Event ID required" }, { status: 400 });
-  }
-
-  const event = await prisma.event.findUnique({ where: { id: eventId } });
-  if (!event) {
-    return NextResponse.json({ error: "Event not found" }, { status: 404 });
-  }
-
-  if (event.userId !== ctx.userId) {
-    return NextResponse.json({ error: "Not authorized" }, { status: 403 });
-  }
-
-  await prisma.event.delete({ where: { id: eventId } });
-  return NextResponse.json({ success: true });
 }

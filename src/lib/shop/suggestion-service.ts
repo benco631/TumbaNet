@@ -156,6 +156,15 @@ export async function createSuggestion(creatorId: string, input: CreateSuggestio
   const clean = validateInput(input);
   const expiresAt = computeSuggestionExpiry();
 
+  // 1. שולפים את המשתמש כדי לדעת באיזו קבוצה הוא נמצא עכשיו
+  const user = await prisma.user.findUnique({
+    where: { id: creatorId },
+    select: { activeGroupId: true }
+  });
+
+  if (!user || !user.activeGroupId) {
+  throw new ShopServiceError("User must have an active group to create a suggestion", 400);
+}
   const created = await prisma.shopSuggestion.create({
     data: {
       title: clean.title,
@@ -165,6 +174,10 @@ export async function createSuggestion(creatorId: string, input: CreateSuggestio
       imageUrl: clean.imageUrl,
       creatorId,
       expiresAt,
+      
+      // 2. הנה החתיכה החסרה שמחברת את הכל!
+      groupId: user.activeGroupId, 
+    
       status: SUGGESTION_STATUS.PENDING,
       votes: VOTING_RULES.autoUpvoteCreator
         ? {
@@ -183,14 +196,7 @@ export async function createSuggestion(creatorId: string, input: CreateSuggestio
   });
 
   return toSuggestionDTO(created, creatorId);
-}
-
-/**
- * Cast or update a vote on a suggestion. If the user has already voted with the
- * same value, this is a no-op (idempotent). If they voted the opposite way, the
- * vote is flipped. After the write, the suggestion's status is re-evaluated —
- * so voting can directly trigger APPROVED/REJECTED transitions.
- */
+} 
 export async function castVote(
   suggestionId: string,
   userId: string,
@@ -288,23 +294,29 @@ export async function evaluateAndTransition(suggestionId: string): Promise<void>
 }
 
 /**
- * Promote a PENDING suggestion into an ADMIN-visible ShopItem and credit
- * the creator their approval bonus. Atomic: either everything commits or nothing.
- *
- * Safe against double-promotion — if a race triggers this twice, the second
- * call no-ops because the suggestion will already be APPROVED.
+ * Promote a PENDING suggestion into an ADMIN-visible ShopItem.
+ * Atomic: either everything commits or nothing.
  */
 export async function promoteSuggestionToItem(
   suggestionId: string,
   creatorId: string,
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
+    // 1. הוספנו את ה-groupId לשליפה!
     const current = await tx.shopSuggestion.findUnique({
       where: { id: suggestionId },
-      select: { status: true, title: true, description: true, price: true, category: true, imageUrl: true },
+      select: { status: true, title: true, description: true, price: true, category: true, imageUrl: true, groupId: true },
     });
     if (!current || current.status !== SUGGESTION_STATUS.PENDING) return; // idempotent
 
+    // 2. מוודאים שיש לנו קבוצה לתת לפריט. אם ההצעה ישנה ואין לה קבוצה, ניקח את הקבוצה הראשונה במערכת
+    let finalGroupId = current.groupId;
+    if (!finalGroupId) {
+      const fallbackGroup = await tx.group.findFirst({ select: { id: true } });
+      finalGroupId = fallbackGroup?.id || null;
+    }
+
+    // 3. יצירת הפריט כולל שיוך לקבוצה!
     const item = await tx.shopItem.create({
       data: {
         title: current.title,
@@ -316,6 +328,7 @@ export async function promoteSuggestionToItem(
         source: SHOP_ITEM_SOURCE.COMMUNITY,
         createdById: creatorId,
         suggestionId,
+        groupId: finalGroupId, // <--- הנה הקסם
       },
     });
 
@@ -328,19 +341,7 @@ export async function promoteSuggestionToItem(
       },
     });
 
-    if (REWARD_RULES.creatorApprovalBonus > 0) {
-      await tx.user.update({
-        where: { id: creatorId },
-        data: { tumbaCoins: { increment: REWARD_RULES.creatorApprovalBonus } },
-      });
-      await tx.coinTransaction.create({
-        data: {
-          userId: creatorId,
-          amount: REWARD_RULES.creatorApprovalBonus,
-          reason: `Shop suggestion approved: ${item.title}`,
-        },
-      });
-    }
+    // הערה: מחקנו מכאן את הבלוק של ה-REWARD_RULES שחילק כסף (TumbaCoins) ליוצר.
   });
 }
 

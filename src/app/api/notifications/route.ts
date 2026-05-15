@@ -20,7 +20,7 @@ export async function GET() {
       ],
     },
     orderBy: { createdAt: "desc" },
-    take: 50,
+    take: 20,
     include: {
       actor: { select: { id: true, name: true } },
     },

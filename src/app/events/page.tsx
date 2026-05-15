@@ -16,7 +16,7 @@ import {
   NotGoingIcon,
   LocationIcon,
 } from "@/lib/icons";
-import { Clock, BarChart2, X, Send } from "lucide-react";
+import { Clock, BarChart2, X, Send, Trash2 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
@@ -82,6 +82,10 @@ export default function EventsPage() {
   // Calendar Modal State
   const [selectedDayEvents, setSelectedDayEvents] = useState<{ day: number, events: Event[] } | null>(null);
 
+  // Modal Delete State
+  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -120,15 +124,28 @@ export default function EventsPage() {
     setSubmitting(false);
   }
 
-  async function handleDelete(eventId: string) {
-    if (!confirm("Delete this event?")) return;
-    await fetch(`/api/events?id=${eventId}`, { method: "DELETE" });
-    fetchEvents();
-    if (selectedDayEvents) {
-      const remaining = selectedDayEvents.events.filter(e => e.id !== eventId);
-      if (remaining.length === 0) setSelectedDayEvents(null);
-      else setSelectedDayEvents({ ...selectedDayEvents, events: remaining });
+  function initiateDelete(event: Event) {
+    setEventToDelete(event);
+  }
+
+  async function confirmDelete() {
+    if (!eventToDelete) return;
+    setIsDeleting(true);
+
+    const res = await fetch(`/api/events?id=${eventToDelete.id}`, { method: "DELETE" });
+    if (res.ok) {
+      fetchEvents();
+      if (selectedDayEvents) {
+        const remaining = selectedDayEvents.events.filter(e => e.id !== eventToDelete.id);
+        if (remaining.length === 0) setSelectedDayEvents(null);
+        else setSelectedDayEvents({ ...selectedDayEvents, events: remaining });
+      }
+      setEventToDelete(null);
+    } else {
+      const data = await res.json();
+      alert(data.error || "Failed to delete event");
     }
+    setIsDeleting(false);
   }
 
   async function handleVote(pollId: string, optionId: string) {
@@ -360,7 +377,7 @@ export default function EventsPage() {
                     event={heroEvent}
                     userId={userId}
                     isAdmin={isAdmin}
-                    onDelete={handleDelete}
+                    onDelete={initiateDelete}
                     onVote={handleVote}
                     onUnvote={handleUnvote}
                     onRsvp={handleRsvp}
@@ -378,7 +395,7 @@ export default function EventsPage() {
                       event={event}
                       userId={userId}
                       isAdmin={isAdmin}
-                      onDelete={handleDelete}
+                      onDelete={initiateDelete}
                       onVote={handleVote}
                       onUnvote={handleUnvote}
                       onRsvp={handleRsvp}
@@ -400,7 +417,7 @@ export default function EventsPage() {
                     event={event}
                     userId={userId}
                     isAdmin={isAdmin}
-                    onDelete={handleDelete}
+                    onDelete={initiateDelete}
                     onVote={handleVote}
                     onUnvote={handleUnvote}
                     onRsvp={handleRsvp}
@@ -453,13 +470,58 @@ export default function EventsPage() {
                     event={event}
                     userId={userId}
                     isAdmin={isAdmin}
-                    onDelete={handleDelete}
+                    onDelete={initiateDelete}
                     onVote={handleVote}
                     onUnvote={handleUnvote}
                     onRsvp={handleRsvp}
                     past={new Date(event.date) < now}
                   />
                 ))}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- Delete Confirmation Modal --- */}
+      <AnimatePresence>
+        {eventToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              onClick={() => !isDeleting && setEventToDelete(null)} 
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+              className="relative w-full max-w-sm bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden p-6 text-center"
+            >
+              <div className="mx-auto w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4 text-red-400">
+                <Trash2 size={32} />
+              </div>
+              <h2 className="text-xl font-bold mb-2">Delete "{eventToDelete.title}"?</h2>
+              <p className="text-sm text-[var(--text-secondary)] mb-6">
+                This action cannot be undone. All RSVPs and polls will be lost.
+              </p>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setEventToDelete(null)} 
+                  disabled={isDeleting} 
+                  className="flex-1 py-3 rounded-xl font-semibold bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmDelete} 
+                  disabled={isDeleting} 
+                  className="flex-1 py-3 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                >
+                  {isDeleting ? "Deleting..." : "Delete Event"}
+                </button>
               </div>
             </motion.div>
           </div>
@@ -502,7 +564,7 @@ function AvatarStack({ rsvps }: { rsvps: Rsvp[] }) {
 function EventCard({
   event, userId, isAdmin, onDelete, onVote, onUnvote, onRsvp, past, isHero = false
 }: {
-  event: Event; userId?: string; isAdmin?: boolean; onDelete: (id: string) => void;
+  event: Event; userId?: string; isAdmin?: boolean; onDelete: (event: Event) => void;
   onVote: (pollId: string, optionId: string) => void; onUnvote: (pollId: string) => void; onRsvp: (eventId: string, status: string) => void;
   past?: boolean; isHero?: boolean;
 }) {
@@ -512,8 +574,7 @@ function EventCard({
   const myRsvp = event.rsvps.find((r) => r.userId === userId);
 
   const goingCount = event.rsvps.filter((r) => r.status === "GOING").length;
- 
-
+  
   const vibeColorClass = CATEGORY_COLORS[event.category] || CATEGORY_COLORS["other"];
 
   return (
@@ -558,8 +619,8 @@ function EventCard({
         </div>
         
         {canDelete && (
-          <button onClick={() => onDelete(event.id)} className="text-xs font-bold text-[var(--text-secondary)] hover:text-red-400 transition-colors p-2 rounded-xl hover:bg-red-500/10">
-            <X size={16} />
+          <button onClick={() => onDelete(event)} className="text-xs font-bold text-[var(--text-secondary)] hover:text-red-400 transition-colors p-2 rounded-xl hover:bg-red-500/10">
+            <Trash2 size={16} />
           </button>
         )}
       </div>

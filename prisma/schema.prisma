@@ -83,6 +83,7 @@ model Group {
   stories             Story[]
   activeUsers         User[]               @relation("ActiveGroup")
   activityRequests    ActivityRequest[]
+  shopSuggestions     ShopSuggestion[]
 
   @@index([inviteCode])
   @@index([createdById])
@@ -373,6 +374,8 @@ model ShopSuggestion {
   approvedItem   ShopItem?            @relation("ApprovedShopItem")
   creator        User                 @relation(fields: [creatorId], references: [id])
   votes          ShopSuggestionVote[]
+  groupId        String?
+  group          Group?   @relation(fields: [groupId], references: [id])
 
   @@index([status])
   @@index([creatorId])

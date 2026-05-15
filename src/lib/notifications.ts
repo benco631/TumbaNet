@@ -8,8 +8,7 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY as string
 );
 
-type NotificationType = "BET" | "EVENT" | "HIGHLIGHT" | "TRANSFER" | "REWARD" | "REJECTED" | "NEW_REQUEST" | "SHOP_USE";
-
+type NotificationType = "BET" | "EVENT" | "HIGHLIGHT" | "TRANSFER" | "REWARD" | "REJECTED" | "NEW_REQUEST" | "SHOP_USE" | "BET_WON" | "BET_LOST";
 interface CreateNotificationParams {
   actorId: string;
   actorName: string;
@@ -68,7 +67,12 @@ export async function notifyAllUsers(params: CreateNotificationParams) {
     
     switch (type) {
       case "BET":
-        notificationTitle = `New Bet by ${actorName}`;
+        // הטריק שלנו: מזהים לפי הטקסט אם זו התערבות חדשה או תוצאות
+        if (message.includes("resolved") || message.includes("won") || message.includes("lost") || message.includes("refunded")) {
+          notificationTitle = "Bet Results!";
+        } else {
+          notificationTitle = `New Bet by ${actorName}`;
+        }
         break;
       case "EVENT":
         notificationTitle = `New Event: ${actorName} invited you`;
@@ -76,10 +80,8 @@ export async function notifyAllUsers(params: CreateNotificationParams) {
       case "HIGHLIGHT":
         notificationTitle = `New Highlight from ${actorName}`;
         break;
-      case "TRANSFER": // <--- הקייס החדש שהוספנו
-        notificationTitle = `TumbaCoins Received!`; 
       case "TRANSFER":
-        notificationTitle = `TumbaCoins Received! `;
+        notificationTitle = `TumbaCoins Received!`;
         break;
       case "REWARD":
         notificationTitle = `Report Approved!`;
@@ -88,7 +90,7 @@ export async function notifyAllUsers(params: CreateNotificationParams) {
         notificationTitle = `Report Update`;
         break;
       case "NEW_REQUEST":
-        notificationTitle = `Action Required `;
+        notificationTitle = `Action Required`;
         break;  
       case "SHOP_USE":
         notificationTitle = `Shop Item Activated!`;
@@ -96,7 +98,6 @@ export async function notifyAllUsers(params: CreateNotificationParams) {
       default:
         notificationTitle = `Update from ${actorName}`;
     }
-
     // הכנת המידע שיישלח לטלפון
     const payload = JSON.stringify({
       title: notificationTitle,
@@ -161,10 +162,14 @@ export async function notifySingleUser(recipientId: string, params: CreateNotifi
     let notificationTitle = "New Update";
     switch (type) {
       case "TRANSFER":
-        notificationTitle = `TumbaCoins Received! 🪙`;
+        notificationTitle = `TumbaCoins Received!`;
         break;
       case "BET":
-        notificationTitle = `New Bet by ${actorName}`;
+        if (message.includes("resolved") || message.includes("won") || message.includes("lost") || message.includes("refunded")) {
+          notificationTitle = "Bet Results!";
+        } else {
+          notificationTitle = `New Bet by ${actorName}`;
+        }
         break;
       case "EVENT":
         notificationTitle = `New Event: ${actorName} invited you`;

@@ -25,7 +25,6 @@ export async function GET(
 }
 
 // PATCH /api/shop/suggestions/[id]  — admin-only moderation override
-// Body: { action: "APPROVE" | "REJECT", note?: string }
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } },
@@ -39,12 +38,16 @@ export async function PATCH(
     if (action !== "APPROVE" && action !== "REJECT") {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
+    
+    // הפונקציה הזו ב-Service כבר דואגת עכשיו להכל: לאשר, ולייצר את המוצר לחנות עם הקבוצה הנכונה ובלי לחלק כסף בטעות.
     await adminResolve(
       params.id,
       action === "APPROVE" ? "APPROVED" : "REJECTED",
       typeof body?.note === "string" ? body.note : undefined,
     );
+    
     const fresh = await getSuggestion(params.id, auth.user.id);
+
     return NextResponse.json({ suggestion: fresh });
   } catch (err) {
     if (err instanceof ShopServiceError) {

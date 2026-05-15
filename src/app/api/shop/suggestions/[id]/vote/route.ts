@@ -23,7 +23,10 @@ export async function POST(
     if (value === null) {
       return NextResponse.json({ error: "Invalid vote value" }, { status: 400 });
     }
+    
+    // הפונקציה הזו ב-Service כבר דואגת להכל: להצביע, לאשר, ולייצר את המוצר לחנות.
     const suggestion = await castVote(params.id, auth.user.id, value);
+
     return NextResponse.json({ suggestion });
   } catch (err) {
     if (err instanceof ShopServiceError) {

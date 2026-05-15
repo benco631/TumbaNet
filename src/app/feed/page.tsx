@@ -185,7 +185,7 @@ export default function FeedPage() {
                           </p>
                           {log.shortNotice && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-yellow-400/10 text-yellow-500 border border-yellow-400/20 w-fit">
-                              <Zap size={10} /> Short Notice
+                              <Zap size={10} /> Invested
                             </span>
                           )}
                         </div>
