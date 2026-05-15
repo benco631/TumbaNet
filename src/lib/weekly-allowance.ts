@@ -97,7 +97,6 @@ export async function runWeeklyAllowance(): Promise<AllowanceResult> {
 export async function awardJoinBonus(
   userId: string,
   groupId: string,
-  groupName: string,
 ): Promise<boolean> {
   const joinDate = new Date();
   // Use start of today as periodStartDate for the idempotency key
