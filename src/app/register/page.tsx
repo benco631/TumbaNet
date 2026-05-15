@@ -61,7 +61,7 @@ export default function RegisterPage() {
       }
 
       // 5. Redirect to dashboard
-      window.location.href = "/sikum";
+      window.location.href = "/";
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       setError(message);
