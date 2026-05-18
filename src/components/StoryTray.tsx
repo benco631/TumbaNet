@@ -105,32 +105,32 @@ export default function StoryTray() {
     setIsCameraOpen(false);
   }, [cameraStream]);
 
-  const startCamera = async (mode: "user" | "environment") => {
-    stopCamera();
-    setIsCameraLoading(true);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: mode,
-          width: { ideal: 1080 },
-          height: { ideal: 1920 } 
-        },
-        audio: false,
-      });
+ // בתוך StoryTray.tsx -> פונקציית startCamera
+const startCamera = async (mode: "user" | "environment") => {
+  stopCamera();
+  setIsCameraLoading(true);
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { 
+        facingMode: mode,
+        // ביטלנו width/height קבועים. מבקשים את המקסימום האפשרי.
+        width: { ideal: 4096 }, 
+        height: { ideal: 2160 }
+      },
+      audio: false,
+    });
 
-      // הורדנו מפה את ה-if (videoRef.current) כי ה-useEffect יעשה את זה במקומנו!
-      
-      setCameraStream(stream);
-      setFacingMode(mode);
-      setIsCameraOpen(true); // זה יפתח את המסך
-    } catch (err) {
-      console.error("Camera access error:", err);
-      alert("Could not access camera. Please check your permissions.");
-      stopCamera();
-    } finally {
-      setIsCameraLoading(false);
-    }
-  };
+    setCameraStream(stream);
+    setFacingMode(mode);
+    setIsCameraOpen(true);
+  } catch (err) {
+    console.error("Camera access error:", err);
+    alert("Could not access camera. Please check your permissions.");
+    stopCamera();
+  } finally {
+    setIsCameraLoading(false);
+  }
+};
 
   const toggleCameraMode = () => {
     startCamera(facingMode === "user" ? "environment" : "user");
@@ -351,12 +351,13 @@ export default function StoryTray() {
 
             <div className="relative flex-1 flex items-center justify-center overflow-hidden bg-black">
               <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className={`absolute inset-0 w-full h-full object-cover ${facingMode === "user" ? "-scale-x-100" : ""}`}
-              />
+  ref={videoRef}
+  autoPlay
+  playsInline
+  muted
+  // שינינו מ object-cover ל object-contain
+  className={`absolute inset-0 w-full h-full object-contain ${facingMode === "user" ? "-scale-x-100" : ""}`}
+/>
 
               <div className="absolute top-4 left-0 right-0 z-30 flex justify-between px-4 pointer-events-none">
                 <button onClick={stopCamera} className="pointer-events-auto p-3.5 bg-black/40 text-white rounded-full backdrop-blur-md">

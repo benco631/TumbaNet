@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSessionContext } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
+import { getServerSession } from "next-auth";
 
 export async function GET() {
   const ctx = await getSessionContext();
@@ -66,32 +68,35 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const ctx = await getSessionContext();
-  if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { url, type = "image", caption } = await req.json();
-
-  if (!url) return NextResponse.json({ error: "Missing media URL" }, { status: 400 });
-
-  const expiresAt = new Date();
-  expiresAt.setHours(expiresAt.getHours() + 24);
-
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    // אנחנו מצפים לקבל את ה-caption כבר כ JSON string מוכן מהפרונט-אנד
+    const { url, type, caption } = body;
+
+    if (!url || !type) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
     const newStory = await prisma.story.create({
       data: {
         url,
         type,
-        caption,
-        userId: ctx.userId,
-        groupId: ctx.activeGroupId,
-        expiresAt,
+        caption, // אנחנו פשוט מכניסים את ה JSON string כמו שהוא לשדה ה-caption בטבלה
+        userId: (session.user as { id: string }).id,
+        //GroupId? // אם יש לך לוגיקה של קבוצות, תוסיף אותה פה
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
       },
     });
 
-    return NextResponse.json(newStory);
+    return NextResponse.json(newStory, { status: 201 });
   } catch (error) {
     console.error("Failed to create story:", error);
-    return NextResponse.json({ error: "Failed to create story" }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
