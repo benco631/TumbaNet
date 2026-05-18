@@ -66,6 +66,15 @@ export default function StoryTray() {
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const draggableTextRef = useRef<HTMLDivElement>(null);
 
+  // מאזין: ברגע שהמצלמה נפתחת ויש לנו זרם - נחבר אותו לווידאו שעל המסך
+  useEffect(() => {
+    if (isCameraOpen && videoRef.current && cameraStream) {
+      videoRef.current.srcObject = cameraStream;
+      // פקודת חובה למובייל כדי שהווידאו באמת יתחיל לרוץ ולא יקפא
+      videoRef.current.play().catch(console.error);
+    }
+  }, [isCameraOpen, cameraStream]);
+
   const loadStories = async () => {
     try {
       const res = await fetch("/api/stories");
@@ -109,12 +118,11 @@ export default function StoryTray() {
         audio: false,
       });
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
+      // הורדנו מפה את ה-if (videoRef.current) כי ה-useEffect יעשה את זה במקומנו!
+      
       setCameraStream(stream);
       setFacingMode(mode);
-      setIsCameraOpen(true);
+      setIsCameraOpen(true); // זה יפתח את המסך
     } catch (err) {
       console.error("Camera access error:", err);
       alert("Could not access camera. Please check your permissions.");
