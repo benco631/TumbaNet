@@ -1,12 +1,12 @@
-"use client"; // חייב להיות השורה הראשונה בהחלט!
+"use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, Camera } from "lucide-react";
 import UserAvatar from "./UserAvatar";
 
-// הגדרת טיפוסים מקומית
-interface StoryItem { id: string; url: string; type: string; createdAt: string; }
+// הוספנו את ה-caption לאינטרפייס!
+interface StoryItem { id: string; url: string; type: string; createdAt: string; caption?: string | null; }
 interface UserStories { id: string; user: { id: string; name: string; avatar: string | null }; isMe: boolean; items: StoryItem[]; }
 
 interface StoryViewerProps {
@@ -28,7 +28,6 @@ export default function StoryViewer({ storyGroups, initialGroupIndex, onClose, o
   const stories = useMemo<StoryItem[]>(() => currentGroup?.items ?? [], [currentGroup]);
   const isMe = currentGroup?.isMe;
 
-  // עדכון צפיות
   useEffect(() => {
     if (!isMe && stories[currentStoryIndex]) {
       fetch("/api/stories/view", {
@@ -39,7 +38,6 @@ export default function StoryViewer({ storyGroups, initialGroupIndex, onClose, o
     }
   }, [currentStoryIndex, isMe, stories]);
 
-  // פונקציות ניווט מורחבות
   const handleNext = useCallback(() => {
     if (currentStoryIndex < stories.length - 1) {
       setCurrentStoryIndex((prev) => prev + 1);
@@ -60,7 +58,6 @@ export default function StoryViewer({ storyGroups, initialGroupIndex, onClose, o
     }
   }, [currentStoryIndex, currentGroupIndex, storyGroups]);
 
-  // הטיימר
   useEffect(() => {
     const timer = setTimeout(() => handleNext(), STORY_DURATION);
     return () => clearTimeout(timer);
@@ -75,7 +72,7 @@ export default function StoryViewer({ storyGroups, initialGroupIndex, onClose, o
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
       className="fixed inset-0 z-50 bg-black flex flex-col sm:p-4"
     >
-      <div className="relative flex-1 w-full max-w-md mx-auto sm:rounded-3xl overflow-hidden shadow-2xl" style={{ perspective: "1200px" }}>
+      <div className="relative flex-1 w-full max-w-md mx-auto sm:rounded-3xl overflow-hidden shadow-2xl bg-black" style={{ perspective: "1200px" }}>
         
         <AnimatePresence>
           <motion.div
@@ -84,10 +81,9 @@ export default function StoryViewer({ storyGroups, initialGroupIndex, onClose, o
             animate={{ rotateY: 0, opacity: 1, zIndex: 20 }}
             exit={{ rotateY: -90, opacity: 0.5, zIndex: 10 }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
-            className="absolute inset-0 bg-[var(--bg-secondary)] origin-center"
+            className="absolute inset-0 origin-center"
           >
-            {/* בר התקדמות למעלה */}
-            <div className="absolute top-0 left-0 right-0 z-20 flex gap-1 p-3 pt-4 sm:pt-4 pb-0 bg-gradient-to-b from-black/60 to-transparent">
+            <div className="absolute top-0 left-0 right-0 z-30 flex gap-1 p-3 pt-4 sm:pt-4 pb-0 bg-gradient-to-b from-black/70 to-transparent">
               {stories.map((story, idx) => (
                 <div key={story.id} className="h-0.5 flex-1 bg-white/30 rounded-full overflow-hidden backdrop-blur-sm">
                   <motion.div
@@ -101,30 +97,43 @@ export default function StoryViewer({ storyGroups, initialGroupIndex, onClose, o
               ))}
             </div>
 
-            {/* כותרת משתמש */}
-            <div className="absolute top-6 left-0 right-0 z-20 flex items-center justify-between px-3">
+            <div className="absolute top-6 left-0 right-0 z-30 flex items-center justify-between px-3">
               <div className="flex items-center gap-2">
                 <UserAvatar name={currentGroup.user.name} avatarUrl={currentGroup.user.avatar} className="w-8 h-8 text-xs ring-1 ring-white/20" />
                 <span className="text-white text-sm font-semibold drop-shadow-md">{currentGroup.user.name}</span>
               </div>
-              <button onClick={onClose} className="p-2 text-white drop-shadow-md hover:bg-white/10 rounded-full transition-colors">
+              <button onClick={onClose} className="p-2 text-white drop-shadow-md hover:bg-white/10 rounded-full transition-colors z-40">
                 <X size={24} />
               </button>
             </div>
 
-            {/* התמונה */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={stories[currentStoryIndex].url} alt="Story" className="w-full h-full object-cover" />
+            {/* קונטיינר התמונה החדש: תמיכה בתמונות אופקיות + רקע מטושטש */}
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black overflow-hidden">
+              {/* רקע מטושטש שיוצר אווירה ומשלים את השוליים */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={stories[currentStoryIndex].url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 blur-2xl scale-110" />
+              {/* התמונה עצמה ב-contain */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={stories[currentStoryIndex].url} alt="Story" className="relative z-10 w-full h-full object-contain" />
+            </div>
 
-            {/* אזורי לחיצה בלתי נראים */}
-            <div className="absolute inset-0 z-10 flex">
+            {/* שכבת הטקסט (Caption) */}
+            {stories[currentStoryIndex].caption && (
+              <div className="absolute top-1/2 left-0 right-0 z-20 flex justify-center px-6 -translate-y-1/2 pointer-events-none">
+                <span className="bg-black/50 text-white text-2xl md:text-3xl px-6 py-3 rounded-2xl backdrop-blur-md text-center font-bold drop-shadow-2xl max-w-full break-words leading-snug">
+                  {stories[currentStoryIndex].caption}
+                </span>
+              </div>
+            )}
+
+            {/* אזורי הלחיצה */}
+            <div className="absolute inset-0 z-20 flex">
               <div className="w-1/3 h-full" onClick={handlePrev} />
               <div className="w-2/3 h-full" onClick={handleNext} />
             </div>
 
-            {/* כפתורי מחיקה והוספה למשתמש עצמו */}
             {isMe && (
-              <div className="absolute bottom-6 left-0 right-0 z-30 flex justify-between px-6 pointer-events-none">
+              <div className="absolute bottom-6 left-0 right-0 z-40 flex justify-between px-6 pointer-events-none">
                 <button onClick={(e) => { e.stopPropagation(); onAddMore?.(); }} className="pointer-events-auto bg-black/40 hover:bg-black/60 transition-colors p-3.5 rounded-full text-white backdrop-blur-md shadow-lg">
                   <Camera size={24} />
                 </button>
@@ -134,7 +143,6 @@ export default function StoryViewer({ storyGroups, initialGroupIndex, onClose, o
               </div>
             )}
 
-            {/* מודאל מחיקה אלגנטי */}
             <AnimatePresence>
               {showDeleteConfirm && (
                 <motion.div

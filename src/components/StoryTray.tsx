@@ -3,17 +3,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react"; // הוספנו פה את ה-X
 import { uploadFileToFirebase } from "@/lib/firebaseUpload";
 import UserAvatar from "./UserAvatar";
 import StoryViewer from "./StoryViewer";
 
-
+// הוספנו את ה-caption לאינטרפייס
 interface StoryItem {
   id: string;
   url: string;
   type: string;
   createdAt: string;
+  caption?: string | null;
 }
 
 interface UserStories {
@@ -30,10 +31,16 @@ export default function StoryTray() {
   const [selectedStoryGroup, setSelectedStoryGroup] = useState<UserStories | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
+  // States חדשים לתצוגה המקדימה של העלאת הסטורי
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [captionText, setCaptionText] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+
   // רפרנס לאינפוט הנסתר שיפתח את הגלריה בטלפון כנלחץ על הפלוס
   const fileInputRef = useRef<HTMLInputElement>(null);
 
- // יצרנו פונקציה חיצונית כדי שנוכל לקרוא לה גם אחרי מחיקה או סגירת סטורי
+  // יצרנו פונקציה חיצונית כדי שנוכל לקרוא לה גם אחרי מחיקה או סגירת סטורי
   const loadStories = async () => {
     try {
       const res = await fetch("/api/stories");
@@ -62,14 +69,28 @@ export default function StoryTray() {
     fileInputRef.current?.click();
   };
 
-  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // יוצרים URL זמני לתצוגה המקדימה
+    const localUrl = URL.createObjectURL(file);
+    setPreviewFile(file);
+    setPreviewUrl(localUrl);
+    setCaptionText(""); // מאפסים טקסט קודם
+    
+    // מנקים את האינפוט כדי שאפשר יהיה לבחור שוב את אותו קובץ
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // פונקציית ההעלאה הסופית - רצה רק אחרי לחיצה על "שתף"
+  const handleUploadStory = async () => {
+    if (!previewFile) return;
+    setIsUploading(true);
+
     try {
       // 1. Upload file directly to Firebase Storage
-      const imageUrl = await uploadFileToFirebase(file, "stories");
-
+      const imageUrl = await uploadFileToFirebase(previewFile, "stories");
       if (!imageUrl) throw new Error("No URL returned from Firebase upload");
 
       // 2. Save story metadata to the database
@@ -78,19 +99,23 @@ export default function StoryTray() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           url: imageUrl,
-          type: file.type.startsWith("video/") ? "video" : "image",
+          type: previewFile.type.startsWith("video/") ? "video" : "image",
+          caption: captionText.trim() || null, // מוסיפים את הטקסט!
         }),
       });
 
       if (!storyRes.ok) throw new Error("Failed to save story to database");
 
-      // 3. Refresh stories so the new story appears immediately
+      // 3. מנקים את חלון התצוגה המקדימה ומרעננים סטוריז
+      setPreviewFile(null);
+      setPreviewUrl(null);
+      setCaptionText("");
       loadStories();
     } catch (error) {
       console.error("Story upload error:", error);
       alert("Failed to upload story. Please try again.");
     } finally {
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setIsUploading(false);
     }
   };
 
@@ -147,7 +172,6 @@ export default function StoryTray() {
             >
               <div className="p-[3px] bg-[var(--bg-primary)] rounded-full relative">
                 <UserAvatar
-                  // אנחנו מנסים קודם לקחת את השם והתמונה מהמסד נתונים, ואם אין - מהסשן
                   name={myStoryGroup?.user?.name || currentUser?.name || "You"}
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   avatarUrl={myStoryGroup?.user?.avatar || (currentUser as any)?.avatar || currentUser?.image || null}
@@ -186,7 +210,7 @@ export default function StoryTray() {
                 <div className="p-[3px] bg-[var(--bg-primary)] rounded-full">
                   <UserAvatar
                     name={story.user.name}
-                    avatarUrl={story.user.avatar} // <--- פה המפתח! המידע המדויק מהשרת
+                    avatarUrl={story.user.avatar}
                     className="w-16 h-16 text-xl"
                   />
                 </div>
@@ -202,10 +226,10 @@ export default function StoryTray() {
           ))}
         </div>
         
-        {/* אינפוט נסתר לבחירת קובץ - עם פתיחת מצלמה אוטומטית במובייל! */}
+        {/* אינפוט נסתר לבחירת קובץ */}
         <input
           type="file"
-          accept="image/*" // הורדנו את הווידאו כדי להכריח מצלמה
+          accept="image/*"
           capture="environment"
           className="hidden"
           ref={fileInputRef}
@@ -217,7 +241,63 @@ export default function StoryTray() {
         `}} />
       </div>
 
-    {/* רינדור הפופ-אפ של הסטוריז */}
+      {/* ── מסך התצוגה המקדימה להוספת סטורי (חדש) ── */}
+      <AnimatePresence>
+        {previewUrl && (
+          <motion.div
+            initial={{ opacity: 0, y: "100%" }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: "100%" }}
+            className="fixed inset-0 z-[60] bg-black flex flex-col sm:p-4"
+          >
+            <div className="relative flex-1 w-full max-w-md mx-auto sm:rounded-3xl overflow-hidden bg-black flex flex-col">
+              {/* כפתור ביטול */}
+              <button 
+                onClick={() => { setPreviewUrl(null); setPreviewFile(null); }} 
+                className="absolute top-4 left-4 z-50 p-2 bg-black/50 text-white rounded-full backdrop-blur-md"
+              >
+                <X size={24} />
+              </button>
+
+              {/* תצוגת התמונה */}
+              <div className="relative flex-1 flex items-center justify-center overflow-hidden">
+                {/* רקע מטושטש */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={previewUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-30 blur-2xl scale-110" />
+                {/* התמונה המקורית ב-contain */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={previewUrl} alt="Preview" className="relative z-10 w-full h-full object-contain" />
+                
+                {/* אזור כתיבת הטקסט במרכז התמונה */}
+                <div className="absolute top-1/2 left-0 right-0 z-20 flex justify-center px-4 -translate-y-1/2">
+                  <textarea
+                    autoFocus
+                    value={captionText}
+                    onChange={(e) => setCaptionText(e.target.value)}
+                    placeholder="הוסף טקסט..."
+                    className="bg-black/40 text-white text-2xl md:text-3xl px-4 py-3 rounded-2xl backdrop-blur-md text-center font-bold drop-shadow-2xl placeholder:text-white/60 resize-none outline-none w-10/12 overflow-hidden"
+                    rows={2}
+                    maxLength={60}
+                  />
+                </div>
+              </div>
+
+              {/* כפתור העלאה */}
+              <div className="p-4 bg-black/80 backdrop-blur-md absolute bottom-0 left-0 right-0 z-50">
+                <button
+                  onClick={handleUploadStory}
+                  disabled={isUploading}
+                  className="w-full py-3.5 bg-gradient-to-r from-tumba-500 to-neon-pink text-white rounded-2xl font-bold text-lg shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 transition-transform active:scale-95"
+                >
+                  {isUploading ? "מעלה סטורי..." : "שתף לסטורי"}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* רינדור הפופ-אפ של הסטוריז הקיימים */}
       <AnimatePresence>
         {selectedStoryGroup && (
           <StoryViewer 
@@ -233,6 +313,6 @@ export default function StoryTray() {
           />
         )}
       </AnimatePresence>
- </>
-);
+    </>
+  );
 }
