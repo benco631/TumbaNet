@@ -24,6 +24,7 @@ export async function GET() {
         id: true,
         name: true,
         avatar: true,
+        // הורדנו מפה את ה-caption כי למשתמש אין קפשן
         stories: {
           where: {
             expiresAt: { gt: new Date() },
@@ -42,14 +43,16 @@ export async function GET() {
 
       return {
         id: user.id,
-        user: { id: user.id, name: user.name, avatar: user.avatar },
+        user: { id: user.id, name: user.name, avatar: user.avatar }, // הורדנו מפה את ה-story.caption השגוי
         hasUnseen,
         isMe: user.id === ctx.userId,
+        // פה נמצאים הסטוריז עצמם! לכן פה אנחנו שולפים את הקפשן (בעזרת המשתנה s)
         items: user.stories.map((s) => ({
           id: s.id,
           url: s.url,
           type: s.type,
           createdAt: s.createdAt,
+          caption: s.caption, // <-- הוספנו את הקפשן למקום הנכון!
         })),
       };
     });

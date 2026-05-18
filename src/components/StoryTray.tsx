@@ -105,32 +105,35 @@ export default function StoryTray() {
     setIsCameraOpen(false);
   }, [cameraStream]);
 
- // בתוך StoryTray.tsx -> פונקציית startCamera
+ 
 const startCamera = async (mode: "user" | "environment") => {
-  stopCamera();
-  setIsCameraLoading(true);
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { 
-        facingMode: mode,
-        // ביטלנו width/height קבועים. מבקשים את המקסימום האפשרי.
-        width: { ideal: 4096 }, 
-        height: { ideal: 2160 }
-      },
-      audio: false,
-    });
+    // במקום לקרוא ל-stopCamera() שסוגר את כל המסך, אנחנו מכבים רק את הזרם הישן
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+    }
+    
+    setIsCameraLoading(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: mode,
+          width: { ideal: 4096 }, 
+          height: { ideal: 2160 }
+        },
+        audio: false,
+      });
 
-    setCameraStream(stream);
-    setFacingMode(mode);
-    setIsCameraOpen(true);
-  } catch (err) {
-    console.error("Camera access error:", err);
-    alert("Could not access camera. Please check your permissions.");
-    stopCamera();
-  } finally {
-    setIsCameraLoading(false);
-  }
-};
+      setCameraStream(stream);
+      setFacingMode(mode);
+      setIsCameraOpen(true); // שומרים על המסך פתוח
+    } catch (err) {
+      console.error("Camera access error:", err);
+      alert("Could not access camera. Please check your permissions.");
+      stopCamera(); // פה כן נסגור הכל כי קרתה שגיאה
+    } finally {
+      setIsCameraLoading(false);
+    }
+  };
 
   const toggleCameraMode = () => {
     startCamera(facingMode === "user" ? "environment" : "user");
