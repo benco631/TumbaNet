@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, Camera } from "lucide-react";
 import UserAvatar from "./UserAvatar";
 
-// הוספנו את ה-caption לאינטרפייס!
 interface StoryItem { id: string; url: string; type: string; createdAt: string; caption?: string | null; }
 interface UserStories { id: string; user: { id: string; name: string; avatar: string | null }; isMe: boolean; items: StoryItem[]; }
 
@@ -27,6 +26,23 @@ export default function StoryViewer({ storyGroups, initialGroupIndex, onClose, o
   const currentGroup = storyGroups[currentGroupIndex];
   const stories = useMemo<StoryItem[]>(() => currentGroup?.items ?? [], [currentGroup]);
   const isMe = currentGroup?.isMe;
+
+  // Fully parses 2D text coordinates (X & Y) with translate safety overrides
+  const parsedCaption = useMemo(() => {
+    const rawCaption = stories[currentStoryIndex]?.caption;
+    if (!rawCaption) return null;
+
+    try {
+      if (rawCaption.startsWith("{")) {
+        return JSON.parse(rawCaption) as { text: string; x: number; y: number };
+      }
+    } catch (e) {
+      console.error("Failed to parse 2D story layout positioning", e);
+    }
+
+    // Default legacy text placement
+    return { text: rawCaption, x: 50, y: 50 };
+  }, [stories, currentStoryIndex]);
 
   useEffect(() => {
     if (!isMe && stories[currentStoryIndex]) {
@@ -61,8 +77,7 @@ export default function StoryViewer({ storyGroups, initialGroupIndex, onClose, o
   useEffect(() => {
     const timer = setTimeout(() => handleNext(), STORY_DURATION);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentGroupIndex, currentStoryIndex]);
+  }, [currentGroupIndex, currentStoryIndex, handleNext]);
 
   if (!currentGroup || stories.length === 0) return null;
 
@@ -83,6 +98,7 @@ export default function StoryViewer({ storyGroups, initialGroupIndex, onClose, o
             transition={{ duration: 0.4, ease: "easeInOut" }}
             className="absolute inset-0 origin-center"
           >
+            {/* Progress Bars */}
             <div className="absolute top-0 left-0 right-0 z-30 flex gap-1 p-3 pt-4 sm:pt-4 pb-0 bg-gradient-to-b from-black/70 to-transparent">
               {stories.map((story, idx) => (
                 <div key={story.id} className="h-0.5 flex-1 bg-white/30 rounded-full overflow-hidden backdrop-blur-sm">
@@ -97,6 +113,7 @@ export default function StoryViewer({ storyGroups, initialGroupIndex, onClose, o
               ))}
             </div>
 
+            {/* Header User Details */}
             <div className="absolute top-6 left-0 right-0 z-30 flex items-center justify-between px-3">
               <div className="flex items-center gap-2">
                 <UserAvatar name={currentGroup.user.name} avatarUrl={currentGroup.user.avatar} className="w-8 h-8 text-xs ring-1 ring-white/20" />
@@ -107,31 +124,39 @@ export default function StoryViewer({ storyGroups, initialGroupIndex, onClose, o
               </button>
             </div>
 
-            {/* קונטיינר התמונה החדש: תמיכה בתמונות אופקיות + רקע מטושטש */}
+            {/* Image Containment View */}
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-black overflow-hidden">
-              {/* רקע מטושטש שיוצר אווירה ומשלים את השוליים */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={stories[currentStoryIndex].url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 blur-2xl scale-110" />
-              {/* התמונה עצמה ב-contain */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={stories[currentStoryIndex].url} alt="Story" className="relative z-10 w-full h-full object-contain" />
             </div>
 
-            {/* שכבת הטקסט (Caption) */}
-            {stories[currentStoryIndex].caption && (
-              <div className="absolute top-1/2 left-0 right-0 z-20 flex justify-center px-6 -translate-y-1/2 pointer-events-none">
-                <span className="bg-black/50 text-white text-2xl md:text-3xl px-6 py-3 rounded-2xl backdrop-blur-md text-center font-bold drop-shadow-2xl max-w-full break-words leading-snug">
-                  {stories[currentStoryIndex].caption}
+            {/* 2D Placed Responsive Overlay Text */}
+            {parsedCaption && (
+              <div 
+                className="absolute z-20 pointer-events-none"
+                style={{ 
+                  top: `${parsedCaption.y}%`, 
+                  left: `${parsedCaption.x ?? 50}%`,
+                  transform: "translate(-50%, -50%)", // Perfectly aligns center origin to coordinates
+                  width: "max-content",
+                  maxWidth: "85%"
+                }}
+              >
+                <span className="bg-black/50 text-white text-xl md:text-2xl px-5 py-2.5 rounded-2xl backdrop-blur-md text-center font-bold drop-shadow-2xl block break-words leading-snug">
+                  {parsedCaption.text}
                 </span>
               </div>
             )}
 
-            {/* אזורי הלחיצה */}
+            {/* Tap Triggers */}
             <div className="absolute inset-0 z-20 flex">
               <div className="w-1/3 h-full" onClick={handlePrev} />
               <div className="w-2/3 h-full" onClick={handleNext} />
             </div>
 
+            {/* Footer Admin Actions */}
             {isMe && (
               <div className="absolute bottom-6 left-0 right-0 z-40 flex justify-between px-6 pointer-events-none">
                 <button onClick={(e) => { e.stopPropagation(); onAddMore?.(); }} className="pointer-events-auto bg-black/40 hover:bg-black/60 transition-colors p-3.5 rounded-full text-white backdrop-blur-md shadow-lg">
@@ -143,6 +168,7 @@ export default function StoryViewer({ storyGroups, initialGroupIndex, onClose, o
               </div>
             )}
 
+            {/* Action Dialog */}
             <AnimatePresence>
               {showDeleteConfirm && (
                 <motion.div
