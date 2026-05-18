@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
-import { Plus, X, Camera, RotateCcw, Zap } from "lucide-react";
+import { Plus, X, RotateCcw, Zap } from "lucide-react";
 import { uploadFileToFirebase } from "@/lib/firebaseUpload";
 import UserAvatar from "./UserAvatar";
 import StoryViewer from "./StoryViewer";
@@ -270,7 +270,7 @@ export default function StoryTray() {
               <div className="p-[3px] bg-[var(--bg-primary)] rounded-full relative">
                 <UserAvatar
                   name={myStoryGroup?.user?.name || currentUser?.name || "You"}
-                  avatarUrl={myStoryGroup?.user?.avatar || (currentUser as any)?.avatar || currentUser?.image || null}
+                  avatarUrl={myStoryGroup?.user?.avatar || (currentUser as { avatar?: string })?.avatar || currentUser?.image || null}
                   className="w-16 h-16 text-xl"
                 />
                 {!myStoryGroup && (
