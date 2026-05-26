@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk } from "next/font/google";
+import localFont from 'next/font/local';
 import "@/app/globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import GroupProvider from "@/components/GroupProvider";
@@ -8,7 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import GroupGate from "@/components/GroupGate";
 import ServiceWorkerRegistry from "@/components/ServiceWorkerRegistry";
 
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"] });
+const spaceGrotesk = localFont({ src: "./fonts/SpaceGrotesk-Regular.woff2" });
 
 export const viewport: Viewport = {
   themeColor: "#050507",
