@@ -43,7 +43,18 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t tumbanet:${BUILD_NUMBER} .'
+                sh '''
+                docker build \
+                --build-arg VAPID_PUBLIC_KEY=$VAPID_PUBLIC_KEY \
+                --build-arg NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY \
+                --build-arg VAPID_PRIVATE_KEY=$VAPID_PRIVATE_KEY \
+                --build-arg VAPID_SUBJECT=$VAPID_SUBJECT \
+                --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID=$NEXT_PUBLIC_FIREBASE_PROJECT_ID \
+                --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=$NEXT_PUBLIC_FIREBASE_API_KEY \
+                --build-arg FIREBASE_CLIENT_EMAIL=$FIREBASE_CLIENT_EMAIL \
+                --build-arg FIREBASE_PRIVATE_KEY="$FIREBASE_PRIVATE_KEY" \
+                -t tumbanet:${BUILD_NUMBER} .
+                '''
             }
         }
     }
