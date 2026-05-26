@@ -41,5 +41,10 @@ pipeline {
             }
         }
 
+        stage('Docker Build') {
+            steps {
+                sh 'docker build -t tumbanet:${BUILD_NUMBER} .'
+            }
+        }
     }
 }
