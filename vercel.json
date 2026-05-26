@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/weekly-coins",
+      "schedule": "0 7 * * 0"
+    },
+    {
+      "path": "/api/cron/monthly-achievements",
+      "schedule": "0 7 1 * *"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest tumbanet --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --no-turbopack)",
+      "Bash(npm run dev)",
+      "Bash(start http://localhost:3000)",
+      "Bash(npx prisma db push --accept-data-loss)",
+      "Bash(npx prisma generate)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(npx prisma db push --force-reset --accept-data-loss)",
+      "Bash(curl -s -X POST http://localhost:3001/api/register -H \"Content-Type: application/json\" -d '{\"\"name\"\":\"\"Yoad\"\",\"\"email\"\":\"\"yoad@tumba.net\"\",\"\"password\"\":\"\"tumba123\"\"}')",
+      "Bash(npx tsc --noEmit --pretty)",
+      "Bash(npx prisma db push)"
+    ]
+  }
+}

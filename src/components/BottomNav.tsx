@@ -1,0 +1,228 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
+import { useState } from "react";
+import { MoreHorizontal, X, LogOut } from "lucide-react";
+// שיניתי את הייבוא כדי להשתמש ב-framer-motion ישירות
+import { motion, AnimatePresence } from "framer-motion";
+import ProfileMenu from "./ProfileMenu";
+import {
+  HostIcon,
+  TumbasIcon,
+  EventsIcon,
+  MarketIcon,
+  TrophyIcon,
+  HighlightsIcon,
+  DictionaryIcon,
+  ShopIcon,
+  AlbumIcon,
+  AdminIcon,
+  AchievementsIcon,
+} from "@/lib/icons";
+import { fadeInUp, staggerContainer } from "@/lib/animations";
+
+const PRIMARY_TABS = [
+  { href: "/",        label: "Home",        icon: HostIcon    },
+  { href: "/tumbas",      label: "Tumbas",      icon: TumbasIcon  },
+  { href: "/events",      label: "Events",      icon: EventsIcon  },
+  { href: "/leaderboard", label: "Leaderboard", icon: TrophyIcon  },
+];
+
+const MORE_ITEMS = [
+  { href: "/sikum",         label: "Highlights",   icon: HighlightsIcon   },
+  { href: "/dictionary",    label: "Dictionary",   icon: DictionaryIcon   },
+  { href: "/achievements",  label: "Achievements", icon: AchievementsIcon },
+  { href: "/market",        label: "Market",       icon: MarketIcon       },
+  { href: "/shop",          label: "Shop",         icon: ShopIcon         },
+  { href: "/album",         label: "Album",        icon: AlbumIcon        },
+];
+
+export default function BottomNav() {
+  const pathname = usePathname();
+  const { data: session } = useSession();
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  if (!session) return null;
+
+  const isAdmin = (session?.user as { isAdmin?: boolean })?.isAdmin;
+  const isMoreActive =
+    MORE_ITEMS.some((item) => pathname.startsWith(item.href)) ||
+    Boolean(isAdmin && pathname.startsWith("/admin"));
+
+  return (
+    <>
+      <nav className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-[var(--bg-secondary)]/97 backdrop-blur-xl border-t border-[var(--border)] pb-safe">
+        <div className="flex items-stretch h-16">
+          {PRIMARY_TABS.map((tab) => {
+            const isActive =
+              tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
+            const Icon = tab.icon;
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className={`flex-1 flex flex-col items-center justify-center gap-1 relative transition-colors ${
+                  isActive ? "text-tumba-400" : "text-[var(--text-secondary)]"
+                }`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-pill"
+                    className="absolute inset-x-1 top-2 bottom-1.5 rounded-[14px] bg-tumba-500/12 border border-tumba-500/15 shadow-[0_0_12px_rgba(192,38,211,0.08)]"
+                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                  />
+                )}
+                <motion.div
+                  className="relative z-10"
+                  whileTap={{ scale: 0.88 }}
+                  transition={{ duration: 0.13 }}
+                >
+                  <Icon
+                    size={isActive ? 23 : 21}
+                    strokeWidth={isActive ? 2.1 : 1.75}
+                  />
+                </motion.div>
+                <span className={`text-[10px] relative z-10 transition-all ${isActive ? "font-semibold" : "font-medium"}`}>
+                  {tab.label}
+                </span>
+              </Link>
+            );
+          })}
+
+          <button
+            onClick={() => setSheetOpen(true)}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 relative transition-colors ${
+              isMoreActive ? "text-tumba-400" : "text-[var(--text-secondary)]"
+            }`}
+          >
+            {isMoreActive && (
+              <motion.div
+                layoutId="nav-pill"
+                className="absolute inset-x-1 top-2 bottom-1.5 rounded-[14px] bg-tumba-500/12 border border-tumba-500/15 shadow-[0_0_12px_rgba(192,38,211,0.08)]"
+                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              />
+            )}
+            <motion.div className="relative z-10" whileTap={{ scale: 0.88 }} transition={{ duration: 0.13 }}>
+              <MoreHorizontal size={isMoreActive ? 23 : 21} strokeWidth={isMoreActive ? 2.1 : 1.75} />
+            </motion.div>
+            <span className={`text-[10px] relative z-10 ${isMoreActive ? "font-semibold" : "font-medium"}`}>
+              More
+            </span>
+          </button>
+        </div>
+      </nav>
+
+      <AnimatePresence>
+        {sheetOpen && (
+          <>
+            {/* רקע כהה שנסגר בלחיצה עליו */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSheetOpen(false)}
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+            />
+            
+            {/* תפריט ההחלקה עצמו */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              drag="y"
+              dragConstraints={{ top: 0 }}
+              dragElastic={{ top: 0, bottom: 0.2 }}
+              onDragEnd={(e, { offset, velocity }) => {
+                // אם המשתמש גרר יותר מ-100 פיקסלים למטה, או עשה תנועת פליק מהירה
+                if (offset.y > 100 || velocity.y > 500) {
+                  setSheetOpen(false);
+                }
+              }}
+              className="fixed bottom-0 inset-x-0 z-50 lg:hidden bg-[var(--bg-secondary)] rounded-t-3xl border-t border-[var(--border)] pb-safe"
+            >
+              <div className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing">
+                <div className="w-10 h-1 bg-[var(--border)] rounded-full" />
+              </div>
+
+              <div className="px-4 pt-1 pb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm font-semibold text-[var(--text-secondary)]">More</span>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setSheetOpen(false)}
+                    className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)] transition-colors"
+                  >
+                    <X size={16} />
+                  </motion.button>
+                </div>
+
+                <motion.div
+                  variants={staggerContainer}
+                  initial="hidden"
+                  animate="visible"
+                  className="grid grid-cols-4 gap-3"
+                >
+                  {MORE_ITEMS.map((item) => {
+                    const isActive = pathname.startsWith(item.href);
+                    const Icon = item.icon;
+                    return (
+                      <motion.div key={item.href} variants={fadeInUp}>
+                        <Link
+                          href={item.href}
+                          onClick={() => setSheetOpen(false)}
+                          className={`flex flex-col items-center gap-2 py-4 rounded-2xl transition-colors ${
+                            isActive
+                              ? "bg-tumba-500/15 text-tumba-400"
+                              : "bg-[var(--bg-card)] text-[var(--text-secondary)]"
+                          }`}
+                        >
+                          <Icon size={22} strokeWidth={1.75} />
+                          <span className="text-xs font-medium">{item.label}</span>
+                        </Link>
+                      </motion.div>
+                    );
+                  })}
+                  
+                  {isAdmin && (
+                    <motion.div variants={fadeInUp}>
+                      <Link
+                        href="/admin"
+                        onClick={() => setSheetOpen(false)}
+                        className={`flex flex-col items-center gap-2 py-4 rounded-2xl transition-colors ${
+                          pathname.startsWith("/admin")
+                            ? "bg-tumba-500/15 text-tumba-400"
+                            : "bg-[var(--bg-card)] text-[var(--text-secondary)]"
+                        }`}
+                      >
+                        <AdminIcon size={22} strokeWidth={1.75} />
+                        <span className="text-xs font-medium">Admin</span>
+                      </Link>
+                    </motion.div>
+                  )}
+                </motion.div>
+
+                <div className="mt-4 pt-4 border-t border-[var(--border)] flex items-center gap-3">
+                  <ProfileMenu size="md" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{session.user?.name}</p>
+                    <p className="text-xs text-[var(--text-secondary)] truncate">{session.user?.email}</p>
+                  </div>
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => signOut()}
+                    className="p-2 rounded-xl text-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
+                    <LogOut size={18} />
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}

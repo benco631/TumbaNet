@@ -1,0 +1,52 @@
+mutation CreateDemoData @transaction @auth(level: USER, insecureReason: "This operation is for seeding demo data and can be run by any authenticated user.") {
+  user1: user_insert(data: {
+    id: "550e8400-e29b-41d4-a716-446655440000",
+    username: "demouser1",
+    email: "demouser1@example.com",
+    createdAt: "2023-01-01T10:00:00Z",
+    displayName: "Demo User One",
+    bio: "A user for demonstration purposes."
+  })
+  user2: user_insert(data: {
+    id: "550e8400-e29b-41d4-a716-446655440001",
+    username: "demouser2",
+    email: "demouser2@example.com",
+    createdAt: "2023-01-01T10:05:00Z",
+    displayName: "Demo User Two",
+    bio: "Another user for demonstration purposes."
+  })
+  group1: group_insert(data: {
+    id: "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+    name: "Firebase Fans",
+    createdAt: "2023-01-05T12:00:00Z",
+    creatorId: "550e8400-e29b-41d4-a716-446655440000",
+    description: "A group for Firebase enthusiasts.",
+    groupPictureUrl: "https://example.com/firebase_group.png"
+  })
+  post1: post_insert(data: {
+    id: "b2c3d4e5-f678-9012-3456-7890abcdef01",
+    content: "Welcome to the Firebase Fans group!",
+    createdAt: "2023-01-05T12:10:00Z",
+    authorId: "550e8400-e29b-41d4-a716-446655440000",
+    groupId: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+  })
+  comment1: comment_insert(data: {
+    id: "c3d4e5f6-7890-1234-5678-90abcdef0123",
+    text: "Great to be here!",
+    createdAt: "2023-01-05T12:15:00Z",
+    authorId: "550e8400-e29b-41d4-a716-446655440001",
+    postId: "b2c3d4e5-f678-9012-3456-7890abcdef01"
+  })
+  membership1: membership_insert(data: {
+    userId: "550e8400-e29b-41d4-a716-446655440000",
+    groupId: "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+    joinedAt: "2023-01-05T12:05:00Z",
+    role: "Admin"
+  })
+  membership2: membership_insert(data: {
+    userId: "550e8400-e29b-41d4-a716-446655440001",
+    groupId: "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+    joinedAt: "2023-01-05T12:08:00Z",
+    role: "Member"
+  })
+}

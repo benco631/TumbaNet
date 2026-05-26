@@ -1,0 +1,57 @@
+query ListAllPosts @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public as it only retrieves public information.") {
+  posts(orderBy: [{createdAt: DESC}]) {
+    id
+    content
+    createdAt
+    imageUrl
+    videoUrl
+    author {
+      id
+      username
+      displayName
+      profilePictureUrl
+    }
+    group {
+      id
+      name
+    }
+  }
+}
+
+mutation CreateNewPost($content: String!, $imageUrl: String, $videoUrl: String, $groupId: UUID) @auth(level: USER) {
+  post_insert(data: {
+    content: $content,
+    createdAt_expr: "request.time",
+    authorId_expr: "auth.uid",
+    imageUrl: $imageUrl,
+    videoUrl: $videoUrl,
+    groupId: $groupId
+  }) {
+    id
+  }
+}
+
+query GetMyGroups @auth(level: USER) {
+  users(key: {id_expr: "auth.uid"}) {
+    id
+    username
+    displayName
+    groups_via_Membership {
+      id
+      name
+      groupPictureUrl
+    }
+  }
+}
+
+mutation JoinGroup($groupId: UUID!) @auth(level: USER) {
+  membership_insert(data: {
+    userId_expr: "auth.uid",
+    groupId: $groupId,
+    joinedAt_expr: "request.time",
+    role: "member"
+  }) {
+    userId
+    groupId
+  }
+}

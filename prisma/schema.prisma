@@ -1,0 +1,559 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String               @id @default(cuid())
+  firebaseUid           String               @unique
+  name                  String
+  email                 String               @unique
+  avatar                String?
+  bio                   String?
+  nickname              String?
+  tag                   String?
+  tumbaCoins            Int                  @default(100)
+  status                String               @default("")
+  isAdmin               Boolean              @default(false)
+  createdAt             DateTime             @default(now())
+  activeGroupId         String?
+  activityLogs          ActivityLog[]
+  albums                Album[]
+  betsCreated           Bet[]
+  coinTransactions      CoinTransaction[]
+  dictionaryComments    DictionaryComment[]
+  dictionaryEntries     DictionaryEntry[]
+  dictionaryRatings     DictionaryRating[]
+  entries               Entry[]
+  events                Event[]
+  eventPollVotes        EventPollVote[]
+  eventRsvps            EventRsvp[]
+  groupsCreated         Group[]              @relation("GroupCreator")
+  groupJoinRequests     GroupJoinRequest[]
+  groupMemberships      GroupMembership[]
+  media                 Media[]
+  mediaComments         MediaComment[]
+  mediaLikes            MediaLike[]
+  monthlyAchievements   MonthlyAchievement[]
+  notificationsSent     Notification[]       @relation("notificationsSent")
+  notificationsReceived Notification[]       @relation("notificationsReceived")
+  purchases             Purchase[]
+  rewardLogs            RewardLog[]
+  shopItemsCreated      ShopItem[]           @relation("ShopItemsCreated")
+  shopSuggestions       ShopSuggestion[]
+  shopSuggestionVotes   ShopSuggestionVote[]
+  stories               Story[]
+  storyViews            StoryView[]
+  activeGroup           Group?               @relation("ActiveGroup", fields: [activeGroupId], references: [id])
+  wagers                Wager[]
+  subscriptions         PushSubscription[]
+  activityRequestsMade     ActivityRequest[] @relation("RequestsMade")
+  activityRequestsResolved ActivityRequest[] @relation("RequestsResolved")
+}
+
+model Group {
+  id                  String               @id @default(cuid())
+  name                String
+  description         String?
+  avatar              String?
+  privacy             String               @default("OPEN")
+  inviteCode          String               @unique
+  createdById         String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  activityLogs        ActivityLog[]
+  albums              Album[]
+  bets                Bet[]
+  coinTransactions    CoinTransaction[]
+  dictionaryEntries   DictionaryEntry[]
+  entries             Entry[]
+  events              Event[]
+  monthlyAchievements MonthlyAchievement[]
+  rewardLogs          RewardLog[]
+  createdBy           User                 @relation("GroupCreator", fields: [createdById], references: [id])
+  joinRequests        GroupJoinRequest[]
+  memberships         GroupMembership[]
+  media               Media[]
+  notifications       Notification[]
+  shopItems           ShopItem[]
+  stories             Story[]
+  activeUsers         User[]               @relation("ActiveGroup")
+  activityRequests    ActivityRequest[]
+  shopSuggestions     ShopSuggestion[]
+
+  @@index([inviteCode])
+  @@index([createdById])
+}
+
+model GroupMembership {
+  id       String   @id @default(cuid())
+  userId   String
+  groupId  String
+  role     String   @default("MEMBER")
+  joinedAt DateTime @default(now())
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@index([groupId])
+  @@index([userId])
+  
+}
+
+model GroupJoinRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  groupId   String
+  status    String   @default("PENDING")
+  message   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@index([groupId, status])
+}
+
+model Entry {
+  id        String   @id @default(cuid())
+  content   String
+  title     String   @default("")
+  imageUrl  String?
+  tags      String?
+  userId    String
+  groupId   String?
+  month     Int
+  year      Int
+  createdAt DateTime @default(now())
+  group     Group?   @relation(fields: [groupId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([month, year])
+  @@index([groupId])
+}
+
+model MonthlySummary {
+  id        String   @id @default(cuid())
+  month     Int
+  year      Int
+  summary   String
+  committed Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([month, year])
+}
+
+model DictionaryEntry {
+  id         String              @id @default(cuid())
+  term       String
+  definition String
+  example    String?
+  userId     String
+  groupId    String?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  comments   DictionaryComment[]
+  group      Group?              @relation(fields: [groupId], references: [id])
+  user       User                @relation(fields: [userId], references: [id])
+  ratings    DictionaryRating[]
+
+  @@index([term])
+  @@index([groupId])
+}
+
+model DictionaryComment {
+  id                String          @id @default(cuid())
+  content           String
+  userId            String
+  dictionaryEntryId String
+  createdAt         DateTime        @default(now())
+  dictionaryEntry   DictionaryEntry @relation(fields: [dictionaryEntryId], references: [id], onDelete: Cascade)
+  user              User            @relation(fields: [userId], references: [id])
+}
+
+model DictionaryRating {
+  id                String          @id @default(cuid())
+  value             Int
+  userId            String
+  dictionaryEntryId String
+  dictionaryEntry   DictionaryEntry @relation(fields: [dictionaryEntryId], references: [id], onDelete: Cascade)
+  user              User            @relation(fields: [userId], references: [id])
+
+  @@unique([userId, dictionaryEntryId])
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  title       String
+  description String
+  date        DateTime
+  location    String?
+  category    String      @default("other")
+  userId      String
+  groupId     String?
+  createdAt   DateTime    @default(now())
+  group       Group?      @relation(fields: [groupId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+  polls       EventPoll[]
+  rsvps       EventRsvp[]
+
+  @@index([groupId])
+}
+
+model EventRsvp {
+  id      String @id @default(cuid())
+  userId  String
+  eventId String
+  status  String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, eventId])
+}
+
+model EventPoll {
+  id       String            @id @default(cuid())
+  question String
+  eventId  String
+  event    Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  options  EventPollOption[]
+}
+
+model EventPollOption {
+  id     String          @id @default(cuid())
+  text   String
+  pollId String
+  poll   EventPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes  EventPollVote[]
+}
+
+model EventPollVote {
+  id       String          @id @default(cuid())
+  userId   String
+  optionId String
+  option   EventPollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id])
+
+  @@unique([userId, optionId])
+}
+
+model Bet {
+  id               String      @id @default(cuid())
+  title            String
+  description      String
+  userId           String
+  groupId          String?
+  closingDate      DateTime
+  status           String      @default("OPEN")
+  resolvedOptionId String?
+  createdAt        DateTime    @default(now())
+  group            Group?      @relation(fields: [groupId], references: [id])
+  user             User        @relation(fields: [userId], references: [id])
+  options          BetOption[]
+
+  @@index([groupId])
+}
+
+model BetOption {
+  id     String  @id @default(cuid())
+  text   String
+  betId  String
+  bet    Bet     @relation(fields: [betId], references: [id], onDelete: Cascade)
+  wagers Wager[]
+}
+
+model Wager {
+  id          String    @id @default(cuid())
+  amount      Int
+  userId      String
+  betOptionId String
+  payout      Int?
+  createdAt   DateTime  @default(now())
+  betOption   BetOption @relation(fields: [betOptionId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, betOptionId])
+}
+
+model Album {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  groupId     String?
+  createdAt   DateTime @default(now())
+  group       Group?   @relation(fields: [groupId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+  media       Media[]
+
+  @@index([groupId])
+}
+
+model Media {
+  id        String         @id @default(cuid())
+  url       String
+  caption   String?
+  type      String         @default("image")
+  userId    String
+  albumId   String?
+  groupId   String?
+  createdAt DateTime       @default(now())
+  album     Album?         @relation(fields: [albumId], references: [id])
+  group     Group?         @relation(fields: [groupId], references: [id])
+  user      User           @relation(fields: [userId], references: [id])
+  comments  MediaComment[]
+  likes     MediaLike[]
+
+  @@index([groupId])
+}
+
+model MediaLike {
+  id        String   @id @default(cuid())
+  mediaId   String
+  userId    String
+  createdAt DateTime @default(now())
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([mediaId, userId])
+}
+
+model MediaComment {
+  id        String   @id @default(cuid())
+  content   String
+  mediaId   String
+  userId    String
+  createdAt DateTime @default(now())
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model ShopItem {
+  id           String          @id @default(cuid())
+  title        String
+  description  String
+  price        Int
+  imageUrl     String?
+  category     String          @default("general")
+  active       Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  source       String          @default("ADMIN")
+  builtInKey   String?         @unique
+  createdById  String?
+  suggestionId String?         @unique
+  groupId      String?
+  purchases    Purchase[]
+  createdBy    User?           @relation("ShopItemsCreated", fields: [createdById], references: [id])
+  group        Group?          @relation(fields: [groupId], references: [id])
+  suggestion   ShopSuggestion? @relation("ApprovedShopItem", fields: [suggestionId], references: [id])
+
+  @@index([groupId])
+}
+
+/// Community-suggested shop item awaiting group approval via thumbs up/down votes.
+model ShopSuggestion {
+  id             String               @id @default(cuid())
+  title          String
+  description    String
+  price          Int
+  category       String               @default("general")
+  imageUrl       String?
+  status         String               @default("PENDING")
+  creatorId      String
+  expiresAt      DateTime
+  resolvedAt     DateTime?
+  resolutionNote String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  approvedItem   ShopItem?            @relation("ApprovedShopItem")
+  creator        User                 @relation(fields: [creatorId], references: [id])
+  votes          ShopSuggestionVote[]
+  groupId        String?
+  group          Group?   @relation(fields: [groupId], references: [id])
+
+  @@index([status])
+  @@index([creatorId])
+  @@index([expiresAt])
+}
+
+model ShopSuggestionVote {
+  id           String         @id @default(cuid())
+  suggestionId String
+  userId       String
+  value        Int
+  createdAt    DateTime       @default(now())
+  suggestion   ShopSuggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id])
+
+  @@unique([suggestionId, userId])
+  @@index([suggestionId])
+}
+
+model Purchase {
+  id         String   @id @default(cuid())
+  userId     String
+  shopItemId String
+  price      Int
+  createdAt  DateTime @default(now())
+  shopItem   ShopItem @relation(fields: [shopItemId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+  isUsed     Boolean  @default(false)
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  recipientId String
+  actorId     String
+  type        String
+  message     String
+  targetUrl   String?
+  isRead      Boolean  @default(false)
+  groupId     String?
+  createdAt   DateTime @default(now())
+  actor       User     @relation("notificationsSent", fields: [actorId], references: [id], onDelete: Cascade)
+  group       Group?   @relation(fields: [groupId], references: [id])
+  recipient   User     @relation("notificationsReceived", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, isRead])
+  @@index([recipientId, createdAt])
+  @@index([groupId])
+}
+
+model ActivityLog {
+  id             String   @id @default(cuid())
+  userId         String
+  groupId        String?
+  type           String
+  note           String?
+  passengerCount Int?
+  distanceKm     Float?
+  attendeeCount  Int?
+  shortNotice    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  group          Group?   @relation(fields: [groupId], references: [id])
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@index([type])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([groupId])
+}
+
+/// One record per user per achievement per month per group. Unique constraint prevents duplicate rewards.
+model MonthlyAchievement {
+  id             String   @id @default(cuid())
+  achievementKey String
+  month          Int
+  year           Int
+  userId         String
+  groupId        String?
+  rewardCoins    Int
+  metricValue    Float?
+  metricLabel    String?
+  createdAt      DateTime @default(now())
+  group          Group?   @relation(fields: [groupId], references: [id])
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@unique([achievementKey, month, year, userId, groupId])
+  @@index([month, year])
+  @@index([userId])
+  @@index([groupId])
+}
+
+/// Audit log for all TumbaCoin credits and debits.
+model CoinTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  groupId   String?
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+  group     Group?   @relation(fields: [groupId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([groupId])
+}
+
+/// Idempotency log for recurring rewards (join bonus, weekly allowance).
+model RewardLog {
+  id              String   @id @default(cuid())
+  userId          String
+  groupId         String
+  rewardType      String
+  periodStartDate DateTime
+  createdAt       DateTime @default(now())
+  group           Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId, rewardType, periodStartDate])
+  @@index([groupId])
+  @@index([userId])
+}
+
+model Story {
+  id        String      @id @default(cuid())
+  url       String
+  type      String      @default("image")
+  caption   String?
+  userId    String
+  groupId   String?
+  createdAt DateTime    @default(now())
+  expiresAt DateTime
+  group     Group?      @relation(fields: [groupId], references: [id])
+  user      User        @relation(fields: [userId], references: [id])
+  views     StoryView[]
+
+  @@index([expiresAt])
+  @@index([userId])
+  @@index([groupId])
+}
+
+model StoryView {
+  id        String   @id @default(cuid())
+  storyId   String
+  userId    String
+  createdAt DateTime @default(now())
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([storyId, userId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+/// Requests for TumbaCoins that require Admin approval (Driving / Hosting)
+model ActivityRequest {
+  id               String   @id @default(cuid())
+  userId           String
+  groupId          String?
+  type             String   // e.g., "DRIVE", "HOST"
+  subType          String   // e.g., "SHORT", "MEDIUM", "LONG", "REGULAR", "INVESTED"
+  participantCount Int      @default(0) // Number of passengers or guests for bonus calculation
+  note             String?
+  calculatedCoins  Int      // The exact amount of TumbaCoins this request is worth
+  status           String   @default("PENDING") // "PENDING", "APPROVED", "REJECTED"
+  resolvedById     String?  // The admin who approved or rejected the request
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user             User     @relation("RequestsMade", fields: [userId], references: [id], onDelete: Cascade)
+  resolvedBy       User?    @relation("RequestsResolved", fields: [resolvedById], references: [id])
+  group            Group?   @relation(fields: [groupId], references: [id])
+
+  @@index([userId])
+  @@index([groupId, status])
+}
