@@ -12,6 +12,7 @@ pipeline {
         NEXT_PUBLIC_FIREBASE_PROJECT_ID = credentials('NEXT_PUBLIC_FIREBASE_PROJECT_ID')
         FIREBASE_CLIENT_EMAIL = credentials('FIREBASE_CLIENT_EMAIL')
         FIREBASE_PRIVATE_KEY = credentials('FIREBASE_PRIVATE_KEY')
+        NEXT_PUBLIC_FIREBASE_API_KEY = credentials('NEXT_PUBLIC_FIREBASE_API_KEY')
     }
 
     stages {
