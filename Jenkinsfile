@@ -1,14 +1,12 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'node:20-alpine'
+            args '-u root'
+        }
+    }
 
     stages {
-
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
                 sh 'npm ci'
@@ -32,6 +30,5 @@ pipeline {
                 sh 'npm run build'
             }
         }
-
     }
 }
