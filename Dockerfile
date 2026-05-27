@@ -5,7 +5,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma
 
-RUN apk add --no-cache openssl openssl1.1-compat
+RUN apk add --no-cache openssl && \
+    apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.16/main libssl1.1
 
 RUN npm ci
 
@@ -18,7 +19,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN apk add --no-cache openssl openssl1.1-compat
+RUN apk add --no-cache openssl && \
+    apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.16/main libssl1.1
 
 ARG NEXT_PUBLIC_FIREBASE_API_KEY
 ARG NEXT_PUBLIC_FIREBASE_PROJECT_ID
@@ -50,7 +52,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN apk add --no-cache openssl openssl1.1-compat
+RUN apk add --no-cache openssl && \
+    apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.16/main libssl1.1
 
 COPY package*.json ./
 
