@@ -86,6 +86,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
+                kubectl apply -f k8s/
                 kubectl set image deployment/tumbanet tumbanet=$ECR_URI:${BUILD_NUMBER}
                 kubectl rollout status deployment/tumbanet
                 '''
