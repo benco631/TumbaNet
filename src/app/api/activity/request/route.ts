@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-// שים לב: ודא שהנתיב של הקובץ הזה תואם למיקום האמיתי של פונקציית ההתראות שלך
-import { notifySingleUser } from "@/lib/notifications"; 
+import { notifySingleUser, configureWebPush } from "@/lib/notifications";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
@@ -61,6 +62,7 @@ export async function POST(req: Request) {
     });
 
     if (admins.length > 0) {
+      configureWebPush();
       const pushPromises = admins.map(admin => 
         notifySingleUser(admin.id, {
           actorId: user.id,

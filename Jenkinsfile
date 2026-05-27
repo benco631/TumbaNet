@@ -13,10 +13,10 @@ pipeline {
         FIREBASE_CLIENT_EMAIL = credentials('FIREBASE_CLIENT_EMAIL')
         FIREBASE_PRIVATE_KEY = credentials('FIREBASE_PRIVATE_KEY')
 
-        AWS_REGION = 'eu-north-1'
+        AWS_REGION = 'us-east-1'
         ECR_REPO = 'tumbanet'
 
-        ECR_URI = '256274921776.dkr.ecr.eu-north-1.amazonaws.com/tumbanet'
+        ECR_URI = '256274921776.dkr.ecr.us-east-1.amazonaws.com/tumbanet'
     }
 
     stages {
@@ -91,6 +91,15 @@ pipeline {
                 docker tag tumbanet:${BUILD_NUMBER} $ECR_URI:${BUILD_NUMBER}
 
                 docker push $ECR_URI:${BUILD_NUMBER}
+                '''
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh '''
+                kubectl set image deployment/tumbanet tumbanet=$ECR_URI:${BUILD_NUMBER}
+                kubectl rollout status deployment/tumbanet
                 '''
             }
         }

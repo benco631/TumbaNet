@@ -1,12 +1,17 @@
 import webpush from "web-push";
 import { prisma } from "./prisma";
 
-// הגדרת המפתחות עבור הספרייה
-webpush.setVapidDetails(
-  "mailto:your-email@example.com", // שים פה אימייל אמיתי שלך
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY as string,
-  process.env.VAPID_PRIVATE_KEY as string
-);
+export function configureWebPush() {
+  const subject = process.env.VAPID_SUBJECT;
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+
+  if (!subject || !publicKey || !privateKey) {
+    throw new Error("Missing VAPID environment variables");
+  }
+
+  webpush.setVapidDetails(subject, publicKey, privateKey);
+}
 
 type NotificationType = "BET" | "EVENT" | "HIGHLIGHT" | "TRANSFER" | "REWARD" | "REJECTED" | "NEW_REQUEST" | "SHOP_USE" | "BET_WON" | "BET_LOST";
 interface CreateNotificationParams {
@@ -140,7 +145,6 @@ export async function notifyAllUsers(params: CreateNotificationParams) {
 export async function notifySingleUser(recipientId: string, params: CreateNotificationParams) {
   const { actorId, actorName, type, message, targetUrl } = params;
 
-  // 1. שמירת ההתראה ב-DB (In-App)
   await prisma.notification.create({
     data: {
       recipientId,

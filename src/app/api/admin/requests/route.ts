@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { notifySingleUser } from "@/lib/notifications"; // תחליף לנתיב האמיתי של הקובץ שלך
+import { notifySingleUser, configureWebPush } from "@/lib/notifications";
 
-// פונקציה למשיכת כל הבקשות שממתינות לאישור
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const session = await getServerSession();
@@ -43,7 +44,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Request not found or already resolved" }, { status: 400 });
     }
 
-    if (action === "REJECT") {
+    configureWebPush();
+
+  if (action === "REJECT") {
       await prisma.$transaction(async (tx) => {
         // 1. דוחים את הבקשה
         await tx.activityRequest.update({

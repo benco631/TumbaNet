@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "./prisma";
-import { adminAuth as firebaseAdmin } from "./firebase-admin";
+import { getAdminAuth } from "./firebase-admin";
 
 /**
  * Get the current user's id and activeGroupId from the session.
@@ -32,7 +32,7 @@ export const authOptions: NextAuthOptions = {
 
         try {
           // Verify the Firebase ID token using firebase-admin
-          const decodedToken = await firebaseAdmin.verifyIdToken(credentials.token);
+          const decodedToken = await getAdminAuth().verifyIdToken(credentials.token);
           
           if (!decodedToken.email) {
             throw new Error("Token does not contain an email address");

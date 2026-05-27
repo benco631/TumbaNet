@@ -1,8 +1,9 @@
 import * as admin from 'firebase-admin';
 
-if (!admin.apps.length) {
+function initAdminApp() {
+  if (admin.apps.length) return;
+
   admin.initializeApp({
-    // עוטפים את פרטי ההתחברות בתוך admin.credential.cert
     credential: admin.credential.cert({
       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
@@ -11,6 +12,12 @@ if (!admin.apps.length) {
   });
 }
 
-// ייצוא של הכלים שאתם צריכים מהאדמין
-export const adminAuth = admin.auth();
-export const adminDb = admin.firestore(); // אם אתם משתמשים גם ב-Firestore שם
+export function getAdminAuth() {
+  initAdminApp();
+  return admin.auth();
+}
+
+export function getAdminDb() {
+  initAdminApp();
+  return admin.firestore();
+}

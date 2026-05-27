@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import admin from "../../../../lib/firebase-admin";
+import { getAdminAuth } from "@/lib/firebase-admin";
 import { PrismaClient } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
 
     const token = authHeader.split("Bearer ")[1];
 
-    const decoded = await admin.auth().verifyIdToken(token);
+    const decoded = await getAdminAuth().verifyIdToken(token);
 
     const { uid, email } = decoded;
 

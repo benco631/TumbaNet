@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { notifyAllUsers } from "@/lib/notifications";
+import { notifyAllUsers, configureWebPush } from "@/lib/notifications";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -38,6 +40,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     });
 
     // 2. שולחים פוש מטורף לכל הקבוצה!
+    configureWebPush();
     await notifyAllUsers({
       actorId: user.id,
       actorName: user.name,

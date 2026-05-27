@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { LockIcon } from "@/lib/icons";
