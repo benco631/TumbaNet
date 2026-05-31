@@ -86,9 +86,8 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                    minikube image load tumbanet:${BUILD_NUMBER}
                     kubectl apply --validate=false -f k8s/
-                    kubectl set image deployment/tumbanet tumbanet=tumbanet:${BUILD_NUMBER}
+                    tumbanet=256274921776.dkr.ecr.us-east-1.amazonaws.com/tumbanet:${BUILD_NUMBER}
                     kubectl rollout status deployment/tumbanet
                 '''
             }
