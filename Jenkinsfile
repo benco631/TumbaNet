@@ -86,9 +86,10 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                    kubectl apply --validate=false -f k8s/
-                    tumbanet=256274921776.dkr.ecr.us-east-1.amazonaws.com/tumbanet:${BUILD_NUMBER}
-                    kubectl rollout status deployment/tumbanet
+                helm upgrade --install tumbanet ./helm/tumbanet \
+                  --set image.tag=${BUILD_NUMBER}
+
+                kubectl rollout status deployment/tumbanet
                 '''
             }
         }
