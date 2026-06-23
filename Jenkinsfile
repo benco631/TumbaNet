@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        nodejs 'NodeJS_20'
+    }
+
     environment {
         VAPID_PUBLIC_KEY                 = credentials('VAPID_PUBLIC_KEY')
         NEXT_PUBLIC_VAPID_PUBLIC_KEY     = credentials('NEXT_PUBLIC_VAPID_PUBLIC_KEY')
@@ -20,6 +24,8 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
+                sh 'node -v'
+                sh 'npm -v'
                 sh 'npm ci'
             }
         }
@@ -86,9 +92,9 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                    kubectl apply --validate=false -f k8s/
-                    kubectl set image deployment/tumbanet tumbanet=256274921776.dkr.ecr.us-east-1.amazonaws.com/tumbanet:${BUILD_NUMBER}
-                    kubectl rollout status deployment/tumbanet --timeout=120s || true
+                kubectl apply --validate=false -f k8s/
+                kubectl set image deployment/tumbanet tumbanet=$ECR_URI:${BUILD_NUMBER}
+                kubectl rollout status deployment/tumbanet --timeout=120s || true
                 '''
             }
         }
