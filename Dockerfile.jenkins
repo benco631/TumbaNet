@@ -29,4 +29,7 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
 # Install Helm (used by the Deploy stage as the single deployment mechanism)
 RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-USER jenkins
+# Stays root: the bind-mounted host Docker socket (/var/run/docker.sock, via the
+# Docker Desktop proxy) is root:root with no group access, so a non-root jenkins
+# user cannot run docker build/push. Matches the user/permissions this image
+# actually ran as previously.
