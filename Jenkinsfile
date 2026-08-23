@@ -92,9 +92,14 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                kubectl apply --validate=false -f k8s/
-                kubectl set image deployment/tumbanet tumbanet=$ECR_URI:${BUILD_NUMBER}
-                kubectl rollout status deployment/tumbanet --timeout=120s || true
+                if ! helm upgrade --install tumbanet helm/tumbanet \
+                      --namespace default \
+                      --set image.repository=$ECR_URI \
+                      --set image.tag=${BUILD_NUMBER} \
+                      --wait --timeout 5m --atomic; then
+                    echo "Helm upgrade failed - Helm automatically rolled back to the previous release (--atomic)"
+                    exit 1
+                fi
                 '''
             }
         }
