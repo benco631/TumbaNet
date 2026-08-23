@@ -89,6 +89,28 @@ pipeline {
             }
         }
 
+        stage('Refresh ECR Pull Secret') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'aws-ecr-creds',
+                    usernameVariable: 'AWS_ACCESS_KEY_ID',
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
+                    sh '''
+                    set +x
+                    ECR_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)
+                    kubectl create secret docker-registry ecr-secret \
+                      --docker-server=$ECR_URI \
+                      --docker-username=AWS \
+                      --docker-password="$ECR_PASSWORD" \
+                      --namespace default \
+                      --dry-run=client -o yaml | kubectl apply -f -
+                    unset ECR_PASSWORD
+                    '''
+                }
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
