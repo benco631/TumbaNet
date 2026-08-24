@@ -9,7 +9,11 @@ replicaCount: 2
 image:
   repository: 256274921776.dkr.ecr.us-east-1.amazonaws.com/tumbanet
   # This sets the pull policy for images.
-  pullPolicy: Always
+  # IfNotPresent, not Always: every build uses an immutable Jenkins BUILD_NUMBER
+  # tag, so a given tag's content never changes. This avoids re-pulling from ECR
+  # (and re-authenticating) on every pod restart, while a genuinely new build
+  # still pulls normally since its tag has never been seen on the node before.
+  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   # Overridden at deploy time with --set image.tag=<jenkins BUILD_NUMBER or commit SHA>
   tag: "latest"
