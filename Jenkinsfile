@@ -119,7 +119,7 @@ pipeline {
                       --namespace default \
                       --set image.repository=$ECR_URI \
                       --set image.tag=${BUILD_NUMBER} \
-                      --wait --timeout 5m --atomic; then
+                      --wait --timeout 20m --atomic; then
                     echo "Helm upgrade failed - Helm automatically rolled back to the previous release (--atomic)"
                     exit 1
                 fi
