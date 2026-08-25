@@ -31,11 +31,14 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
-Common labels
+Common labels. Includes the immutable selector plus modern app.kubernetes.io/*
+labels as additional, non-selecting metadata.
 */}}
 {{- define "tumbanet.labels" -}}
 helm.sh/chart: {{ include "tumbanet.chart" . }}
 {{ include "tumbanet.selectorLabels" . }}
+app.kubernetes.io/name: {{ include "tumbanet.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -43,11 +46,12 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
-Selector labels
+Selector labels. Must exactly match the pre-existing Deployment's immutable
+spec.selector.matchLabels (app: tumbanet, set at the original install) --
+Kubernetes rejects any change to a Deployment's selector after creation.
 */}}
 {{- define "tumbanet.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "tumbanet.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+app: {{ include "tumbanet.name" . }}
 {{- end }}
 
 {{/*
