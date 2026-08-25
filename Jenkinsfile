@@ -15,9 +15,10 @@ pipeline {
         FIREBASE_CLIENT_EMAIL            = credentials('FIREBASE_CLIENT_EMAIL')
         FIREBASE_PRIVATE_KEY             = credentials('FIREBASE_PRIVATE_KEY')
 
-        AWS_REGION = 'us-east-1'
-        ECR_REPO   = 'tumbanet'
-        ECR_URI    = '256274921776.dkr.ecr.us-east-1.amazonaws.com/tumbanet'
+        AWS_REGION   = 'us-east-1'
+        ECR_REPO     = 'tumbanet'
+        ECR_REGISTRY = '256274921776.dkr.ecr.us-east-1.amazonaws.com'
+        ECR_URI      = "${ECR_REGISTRY}/tumbanet"
     }
 
     stages {
@@ -74,7 +75,7 @@ pipeline {
                 )]) {
                     sh '''
                     aws ecr get-login-password --region $AWS_REGION | \
-                    docker login --username AWS --password-stdin $ECR_URI
+                    docker login --username AWS --password-stdin $ECR_REGISTRY
                     '''
                 }
             }
@@ -100,7 +101,7 @@ pipeline {
                     set +x
                     ECR_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)
                     kubectl create secret docker-registry ecr-secret \
-                      --docker-server=$ECR_URI \
+                      --docker-server=$ECR_REGISTRY \
                       --docker-username=AWS \
                       --docker-password="$ECR_PASSWORD" \
                       --namespace default \
